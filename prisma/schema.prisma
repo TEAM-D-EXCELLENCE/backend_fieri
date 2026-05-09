@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Country {
+  id            Int          @id @default(autoincrement())
+  name          String       @unique
+
+  universities  University[]
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model University {
+  id          Int        @id @default(autoincrement())
+  name        String
+
+  countryId   Int
+  country     Country    @relation(fields: [countryId], references: [id])
+
+  branches    Branch[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@unique([name, countryId])
+}
+
+model Branch {
+  id            Int          @id @default(autoincrement())
+  name          String
+
+  universityId  Int
+  university    University   @relation(fields: [universityId], references: [id])
+
+  members       Member[]
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Member {
+  id           Int          @id @default(autoincrement())
+
+  firstname    String
+  lastname     String
+
+  email        String       @unique
+  password     String
+
+  isActive     Boolean      @default(true)
+
+  branchId     Int
+  branch       Branch       @relation(fields: [branchId], references: [id])
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
