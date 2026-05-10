@@ -24,6 +24,8 @@ Content-Type: {{contentType}}
 GET {{baseUrl}}/universities/1/branches
 Content-Type: {{contentType}}
 
+### Répucérer les infos sur une branche
+Get {{baseUrl}}/branches/1
 
 ### ------------------------------------------------------------
 ### MODULE : AUTHENTICATION

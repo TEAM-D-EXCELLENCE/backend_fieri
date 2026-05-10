@@ -1,12 +1,33 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 
-@Controller()
+@Controller() 
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
+  // Route: GET /countries
   @Get('countries')
-  getCountries() {
+  findAllCountries() {
     return this.organizationService.getCountries();
+  }
+
+  // Route: GET /countries/:id/universities
+  // Exemple: /countries/1/universities
+  @Get('countries/:id/universities')
+  findUniversities(@Param('id', ParseIntPipe) id: number) {
+    return this.organizationService.getUniversitiesByCountry(id);
+  }
+
+  // Route: GET /universities/:id/branches
+  // Exemple: /universities/1/branches
+  @Get('universities/:id/branches')
+  findBranches(@Param('id', ParseIntPipe) id: number) {
+    return this.organizationService.getBranchesByUniversity(id);
+  }
+
+  // GET /branches/1
+  @Get('branches/:id')
+  findOneBranch(@Param('id', ParseIntPipe) id: number) {
+    return this.organizationService.getBranchById(id);
   }
 }
