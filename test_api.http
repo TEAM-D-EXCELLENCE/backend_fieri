@@ -1,0 +1,69 @@
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### ------------------------------------------------------------
+### MODULE : ORGANIZATION (Routes Publiques)
+### ------------------------------------------------------------
+
+# @name getCountries
+# Récupérer la liste de tous les pays
+GET {{baseUrl}}/countries
+Content-Type: {{contentType}}
+
+###
+
+# @name getUniversitiesByCountry
+# Récupérer les universités d'un pays (Ex: ID 1)
+GET {{baseUrl}}/countries/1/universities
+Content-Type: {{contentType}}
+
+###
+
+# @name getBranchesByUniversity
+# Récupérer les branches d'une université (Ex: ID 1)
+GET {{baseUrl}}/universities/1/branches
+Content-Type: {{contentType}}
+
+
+### ------------------------------------------------------------
+### MODULE : AUTHENTICATION
+### ------------------------------------------------------------
+
+# @name register
+# Inscription (Email, Password, Nom, Prénom, ID de la Branche choisie)
+POST {{baseUrl}}/auth/register
+Content-Type: {{contentType}}
+
+{
+    "email": "dev.test@fieri.com",
+    "password": "Password123!",
+    "firstName": "Tisto",
+    "lastName": "Dev",
+    "branchId": 1
+}
+
+###
+
+# @name login
+# Connexion pour obtenir le jeton JWT
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+
+{
+    "email": "dev.test@fieri.com",
+    "password": "Password123!"
+}
+
+### Capture automatique du Token après le login (si extension REST Client utilisée)
+@authToken = {{login.response.body.data.access_token}}
+
+
+### ------------------------------------------------------------
+### MODULE : MEMBERS (Routes Protégées)
+### ------------------------------------------------------------
+
+# @name getProfile
+# Voir mon profil (Nécessite le Token dans le Header)
+GET {{baseUrl}}/members/me
+Authorization: Bearer {{authToken}}
+Content-Type: {{contentType}}
