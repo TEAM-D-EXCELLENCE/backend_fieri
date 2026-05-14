@@ -12,20 +12,39 @@ Content-Type: {{contentType}}
 
 ###
 
+# @name getOneCountry
+# Récupérer le détail d'un pays spécifique (NOUVEAU)
+GET {{baseUrl}}/countries/1
+Content-Type: {{contentType}}
+
+###
+
 # @name getUniversitiesByCountry
-# Récupérer les universités d'un pays (Ex: ID 1)
+# Récupérer les universités d'un pays
 GET {{baseUrl}}/countries/1/universities
 Content-Type: {{contentType}}
 
 ###
 
+# @name getOneUniversity
+# Récupérer le détail d'une université spécifique (NOUVEAU)
+GET {{baseUrl}}/universities/1
+Content-Type: {{contentType}}
+
+###
+
 # @name getBranchesByUniversity
-# Récupérer les branches d'une université (Ex: ID 1)
+# Récupérer les branches d'une université
 GET {{baseUrl}}/universities/1/branches
 Content-Type: {{contentType}}
 
-### Répucérer les infos sur une branche
-Get {{baseUrl}}/branches/1
+###
+
+# @name getOneBranch
+# Récupérer les infos sur une branche spécifique
+GET {{baseUrl}}/branches/1
+Content-Type: {{contentType}}
+
 
 ### ------------------------------------------------------------
 ### MODULE : AUTHENTICATION
@@ -37,7 +56,7 @@ POST {{baseUrl}}/auth/register
 Content-Type: {{contentType}}
 
 {
-    "email": "dev.test@fieri.com",
+    "email": "dev.test+tisto@fieri.com",
     "password": "Password123!",
     "firstName": "Tisto",
     "lastName": "Dev",
@@ -52,11 +71,11 @@ POST {{baseUrl}}/auth/login
 Content-Type: {{contentType}}
 
 {
-    "email": "dev.test@fieri.com",
+    "email": "dev.test+tisto@fieri.com",
     "password": "Password123!"
 }
 
-### Capture automatique du Token après le login (si extension REST Client utilisée)
+### Capture automatique du Token après le login
 @authToken = {{login.response.body.data.access_token}}
 
 

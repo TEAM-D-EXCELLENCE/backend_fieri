@@ -30,4 +30,16 @@ export class OrganizationController {
   findOneBranch(@Param('id', ParseIntPipe) id: number) {
     return this.organizationService.getBranchById(id);
   }
+
+  // GET /countries/:id
+  @Get('countries/:id')
+  findOneCountry(@Param('id', ParseIntPipe) id: number) {
+    return this.organizationService.getCountryById(id);
+  }
+
+  // GET /universities/:id
+  @Get('universities/:id')
+  findOneUniversity(@Param('id', ParseIntPipe) id: number) {
+    return this.organizationService.getUniversityById(id);
+  }
 }

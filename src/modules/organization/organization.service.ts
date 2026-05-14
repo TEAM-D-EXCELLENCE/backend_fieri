@@ -44,4 +44,29 @@ export class OrganizationService {
       data: branch
     };
   }
+
+  // Récupérer un pays spécifique par son ID
+  async getCountryById(id: number) {
+    const country = await this.prisma.country.findUnique({
+      where: { id },
+    });
+    return {
+      success: true,
+      message: "Détails du pays récupérés",
+      data: country,
+    };
+  }
+
+  // Récupérer une université spécifique par son ID
+  async getUniversityById(id: number) {
+    const university = await this.prisma.university.findUnique({
+      where: { id },
+      include: { country: true } // Inclus le pays pour plus de détails côté front
+    });
+    return {
+      success: true,
+      message: "Détails de l'université récupérés",
+      data: university,
+    };
+  }
 }
