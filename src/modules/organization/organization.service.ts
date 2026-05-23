@@ -69,4 +69,25 @@ export class OrganizationService {
       data: university,
     };
   }
+
+async createCountry(name: string) {
+    const country = await this.prisma.country.create({
+      data: { name },
+    });
+    return { success: true, message: "Pays créé avec succès", data: country };
+  }
+
+  async createUniversity(name: string, countryId: number) {
+    const university = await this.prisma.university.create({
+      data: { name, countryId },
+    });
+    return { success: true, message: "Université créée avec succès", data: university };
+  }
+
+  async createBranch(name: string, universityId: number) {
+    const branch = await this.prisma.branch.create({
+      data: { name, universityId },
+    });
+    return { success: true, message: "Branche créée avec succès", data: branch };
+  }
 }

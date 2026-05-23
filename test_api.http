@@ -1,4 +1,5 @@
 @baseUrl = http://localhost:3000
+# @baseUrl = https://backend-fieri.vercel.app/
 @contentType = application/json
 
 ### ------------------------------------------------------------
@@ -10,12 +11,50 @@
 GET {{baseUrl}}/countries
 Content-Type: {{contentType}}
 
+#Résultat
+# {
+#   "success": true,
+#   "message": "Liste des pays récupérée",
+#   "data": [
+#     {
+#       "id": 1,
+#       "name": "Benin",
+#       "createdAt": "2026-05-10T11:06:54.272Z",
+#       "updatedAt": "2026-05-10T11:06:15.403Z"
+#     },
+#     {
+#       "id": 3,
+#       "name": "Bénin",
+#       "createdAt": "2026-05-23T03:22:33.809Z",
+#       "updatedAt": "2026-05-23T03:22:33.809Z"
+#     },
+#     {
+#       "id": 2,
+#       "name": "Togo",
+#       "createdAt": "2026-05-19T20:49:12.269Z",
+#       "updatedAt": "2026-05-23T02:39:51.753Z"
+#     }
+#   ]
+# }
+
 ###
 
 # @name getOneCountry
 # Récupérer le détail d'un pays spécifique (NOUVEAU)
 GET {{baseUrl}}/countries/1
 Content-Type: {{contentType}}
+
+#Resultat
+# {
+#   "success": true,
+#   "message": "Détails du pays récupérés",
+#   "data": {
+#     "id": 1,
+#     "name": "Benin",
+#     "createdAt": "2026-05-10T11:06:54.272Z",
+#     "updatedAt": "2026-05-10T11:06:15.403Z"
+#   }
+# }
 
 ###
 
@@ -24,6 +63,21 @@ Content-Type: {{contentType}}
 GET {{baseUrl}}/countries/1/universities
 Content-Type: {{contentType}}
 
+#Résultat
+# {
+#   "success": true,
+#   "message": "Universités récupérées",
+#   "data": [
+#     {
+#       "id": 1,
+#       "name": "UAC",
+#       "countryId": 1,
+#       "createdAt": "2026-05-10T11:53:12.282Z",
+#       "updatedAt": "2026-05-10T11:52:29.206Z"
+#     }
+#   ]
+# }
+
 ###
 
 # @name getOneUniversity
@@ -31,12 +85,45 @@ Content-Type: {{contentType}}
 GET {{baseUrl}}/universities/1
 Content-Type: {{contentType}}
 
+#Résultat
+# {
+#   "success": true,
+#   "message": "Détails de l'université récupérés",
+#   "data": {
+#     "id": 1,
+#     "name": "UAC",
+#     "countryId": 1,
+#     "createdAt": "2026-05-10T11:53:12.282Z",
+#     "updatedAt": "2026-05-10T11:52:29.206Z",
+#     "country": {
+#       "id": 1,
+#       "name": "Benin",
+#       "createdAt": "2026-05-10T11:06:54.272Z",
+#       "updatedAt": "2026-05-10T11:06:15.403Z"
+#     }
+#   }
+# }
 ###
 
 # @name getBranchesByUniversity
 # Récupérer les branches d'une université
 GET {{baseUrl}}/universities/1/branches
 Content-Type: {{contentType}}
+
+#Résultat
+# {
+#   "success": true,
+#   "message": "Branches récupérées",
+#   "data": [
+#     {
+#       "id": 1,
+#       "name": "AI & DataScience",
+#       "universityId": 1,
+#       "createdAt": "2026-05-10T11:54:18.491Z",
+#       "updatedAt": "2026-05-10T11:53:31.715Z"
+#     }
+#   ]
+# }
 
 ###
 
@@ -45,6 +132,31 @@ Content-Type: {{contentType}}
 GET {{baseUrl}}/branches/1
 Content-Type: {{contentType}}
 
+#Résultat
+# {
+#   "success": true,
+#   "message": "Détails de la branche récupérés",
+#   "data": {
+#     "id": 1,
+#     "name": "AI & DataScience",
+#     "universityId": 1,
+#     "createdAt": "2026-05-10T11:54:18.491Z",
+#     "updatedAt": "2026-05-10T11:53:31.715Z",
+#     "university": {
+#       "id": 1,
+#       "name": "UAC",
+#       "countryId": 1,
+#       "createdAt": "2026-05-10T11:53:12.282Z",
+#       "updatedAt": "2026-05-10T11:52:29.206Z",
+#       "country": {
+#         "id": 1,
+#         "name": "Benin",
+#         "createdAt": "2026-05-10T11:06:54.272Z",
+#         "updatedAt": "2026-05-10T11:06:15.403Z"
+#       }
+#     }
+#   }
+# }
 
 ### ------------------------------------------------------------
 ### MODULE : AUTHENTICATION
@@ -56,12 +168,37 @@ POST {{baseUrl}}/auth/register
 Content-Type: {{contentType}}
 
 {
-    "email": "dev.test+tisto@fieri.com",
+    "email": "dev.test+tisto2@fieri.com",
     "password": "Password123!",
     "firstName": "Tisto",
     "lastName": "Dev",
     "branchId": 1
 }
+
+#Résultat
+#Si utilisateur enregistré
+# {
+#   "message": "Cet email est déjà utilisé",
+#   "error": "Conflict",
+#   "statusCode": 409
+# }
+
+# sinon
+
+# {
+#   "success": true,
+#   "message": "Inscription réussie",
+#   "data": {
+#     "id": 4,
+#     "firstname": "Tisto",
+#     "lastname": "Dev",
+#     "email": "dev.test+tisto2@fieri.com",
+#     "isActive": true,
+#     "branchId": 1,
+#     "createdAt": "2026-05-23T03:29:39.856Z",
+#     "updatedAt": "2026-05-23T03:29:39.856Z"
+#   }
+# }
 
 ###
 
@@ -74,6 +211,21 @@ Content-Type: {{contentType}}
     "email": "dev.test+tisto@fieri.com",
     "password": "Password123!"
 }
+
+#Résultat
+# {
+#   "success": true,
+#   "message": "Connexion réussie",
+#   "data": {
+#     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsImVtYWlsIjoiZGV2LnRlc3QrdGlzdG9AZmllcmkuY29tIiwiaWF0IjoxNzc5NTA3MDA1LCJleHAiOjE3Nzk1OTM0MDV9.KDXLvcTpPlfapLdfiH8TaLUUt77QLOXQgOc-yEFccQI",
+#     "member": {
+#       "id": 3,
+#       "email": "dev.test+tisto@fieri.com",
+#       "firstName": "Tisto",
+#       "lastName": "Dev"
+#     }
+#   }
+# }
 
 ### Capture automatique du Token après le login
 @authToken = {{login.response.body.data.access_token}}
@@ -88,3 +240,88 @@ Content-Type: {{contentType}}
 GET {{baseUrl}}/members/me
 Authorization: Bearer {{authToken}}
 Content-Type: {{contentType}}
+
+#Résultat
+# {
+#   "success": true,
+#   "message": "Profil récupéré",
+#   "data": {
+#     "id": 3,
+#     "email": "dev.test+tisto@fieri.com"
+#   }
+# }
+
+### ------------------------------------------------------------
+### MODULE : ORGANIZATION (Création / POST)
+### ------------------------------------------------------------
+
+# @name createCountry
+# Créer un pays (Ex: Bénin)
+POST {{baseUrl}}/countries
+Content-Type: {{contentType}}
+
+{
+    "name": "Niger"
+}
+
+#Résultat
+# {
+#   "success": true,
+#   "message": "Pays créé avec succès",
+#   "data": {
+#     "id": 4,
+#     "name": "Niger",
+#     "createdAt": "2026-05-23T03:31:25.549Z",
+#     "updatedAt": "2026-05-23T03:31:25.549Z"
+#   }
+# }
+
+###
+
+# @name createUniversity
+# Créer une université liée au pays (Utilise l'ID du pays créé, ex: 1)
+POST {{baseUrl}}/universities
+Content-Type: {{contentType}}
+
+{
+    "name": "Université Abdou Moumouni (UAM)",
+    "countryId": 4
+}
+
+#Résultat
+# {
+#   "success": true,
+#   "message": "Université créée avec succès",
+#   "data": {
+#     "id": 6,
+#     "name": "Université Abdou Moumouni (UAM)",
+#     "countryId": 4,
+#     "createdAt": "2026-05-23T03:33:23.603Z",
+#     "updatedAt": "2026-05-23T03:33:23.603Z"
+#   }
+# }
+
+###
+
+# @name createBranch
+# Créer une branche liée à l'université (Utilise l'ID de l'université, ex: 1)
+POST {{baseUrl}}/branches
+Content-Type: {{contentType}}
+
+{
+    "name": "Electronique embarquée",
+    "universityId": 6
+}
+
+#Résultat
+# {
+#   "success": true,
+#   "message": "Branche créée avec succès",
+#   "data": {
+#     "id": 3,
+#     "name": "Electronique embarquée",
+#     "universityId": 6,
+#     "createdAt": "2026-05-23T03:35:12.894Z",
+#     "updatedAt": "2026-05-23T03:35:12.894Z"
+#   }
+# }

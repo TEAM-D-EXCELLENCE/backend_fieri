@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 
 @Controller() 
@@ -41,5 +41,26 @@ export class OrganizationController {
   @Get('universities/:id')
   findOneUniversity(@Param('id', ParseIntPipe) id: number) {
     return this.organizationService.getUniversityById(id);
+  }
+
+  @Post('countries')
+  async createCountry(@Body('name') name: string) {
+    return this.organizationService.createCountry(name);
+  }
+
+  @Post('universities')
+  async createUniversity(
+    @Body('name') name: string,
+    @Body('countryId', ParseIntPipe) countryId: number
+  ) {
+    return this.organizationService.createUniversity(name, countryId);
+  }
+
+  @Post('branches')
+  async createBranch(
+    @Body('name') name: string,
+    @Body('universityId', ParseIntPipe) universityId: number
+  ) {
+    return this.organizationService.createBranch(name, universityId);
   }
 }
