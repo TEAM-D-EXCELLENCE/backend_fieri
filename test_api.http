@@ -1,327 +1,317 @@
-@baseUrl = http://localhost:3000
-# @baseUrl = https://backend-fieri.vercel.app/
-@contentType = application/json
+# FIERI Backend — API test collection
+# Usage: replace {{host}} and {{token}} as needed.
+# Default local host
 
-### ------------------------------------------------------------
-### MODULE : ORGANIZATION (Routes Publiques)
-### ------------------------------------------------------------
+# @host = http://localhost:3000
+@host = https://backend-fieri.vercel.app
+@token = YOUR_JWT_HERE
 
-# @name getCountries
-# Récupérer la liste de tous les pays
-GET {{baseUrl}}/countries
-Content-Type: {{contentType}}
-
-#Résultat
-# {
-#   "success": true,
-#   "message": "Liste des pays récupérée",
-#   "data": [
-#     {
-#       "id": 1,
-#       "name": "Benin",
-#       "createdAt": "2026-05-10T11:06:54.272Z",
-#       "updatedAt": "2026-05-10T11:06:15.403Z"
-#     },
-#     {
-#       "id": 3,
-#       "name": "Bénin",
-#       "createdAt": "2026-05-23T03:22:33.809Z",
-#       "updatedAt": "2026-05-23T03:22:33.809Z"
-#     },
-#     {
-#       "id": 2,
-#       "name": "Togo",
-#       "createdAt": "2026-05-19T20:49:12.269Z",
-#       "updatedAt": "2026-05-23T02:39:51.753Z"
-#     }
-#   ]
-# }
-
-###
-
-# @name getOneCountry
-# Récupérer le détail d'un pays spécifique (NOUVEAU)
-GET {{baseUrl}}/countries/1
-Content-Type: {{contentType}}
-
-#Resultat
-# {
-#   "success": true,
-#   "message": "Détails du pays récupérés",
-#   "data": {
-#     "id": 1,
-#     "name": "Benin",
-#     "createdAt": "2026-05-10T11:06:54.272Z",
-#     "updatedAt": "2026-05-10T11:06:15.403Z"
-#   }
-# }
-
-###
-
-# @name getUniversitiesByCountry
-# Récupérer les universités d'un pays
-GET {{baseUrl}}/countries/1/universities
-Content-Type: {{contentType}}
-
-#Résultat
-# {
-#   "success": true,
-#   "message": "Universités récupérées",
-#   "data": [
-#     {
-#       "id": 1,
-#       "name": "UAC",
-#       "countryId": 1,
-#       "createdAt": "2026-05-10T11:53:12.282Z",
-#       "updatedAt": "2026-05-10T11:52:29.206Z"
-#     }
-#   ]
-# }
-
-###
-
-# @name getOneUniversity
-# Récupérer le détail d'une université spécifique (NOUVEAU)
-GET {{baseUrl}}/universities/1
-Content-Type: {{contentType}}
-
-#Résultat
-# {
-#   "success": true,
-#   "message": "Détails de l'université récupérés",
-#   "data": {
-#     "id": 1,
-#     "name": "UAC",
-#     "countryId": 1,
-#     "createdAt": "2026-05-10T11:53:12.282Z",
-#     "updatedAt": "2026-05-10T11:52:29.206Z",
-#     "country": {
-#       "id": 1,
-#       "name": "Benin",
-#       "createdAt": "2026-05-10T11:06:54.272Z",
-#       "updatedAt": "2026-05-10T11:06:15.403Z"
-#     }
-#   }
-# }
-###
-
-# @name getBranchesByUniversity
-# Récupérer les branches d'une université
-GET {{baseUrl}}/universities/1/branches
-Content-Type: {{contentType}}
-
-#Résultat
-# {
-#   "success": true,
-#   "message": "Branches récupérées",
-#   "data": [
-#     {
-#       "id": 1,
-#       "name": "AI & DataScience",
-#       "universityId": 1,
-#       "createdAt": "2026-05-10T11:54:18.491Z",
-#       "updatedAt": "2026-05-10T11:53:31.715Z"
-#     }
-#   ]
-# }
-
-###
-
-# @name getOneBranch
-# Récupérer les infos sur une branche spécifique
-GET {{baseUrl}}/branches/1
-Content-Type: {{contentType}}
-
-#Résultat
-# {
-#   "success": true,
-#   "message": "Détails de la branche récupérés",
-#   "data": {
-#     "id": 1,
-#     "name": "AI & DataScience",
-#     "universityId": 1,
-#     "createdAt": "2026-05-10T11:54:18.491Z",
-#     "updatedAt": "2026-05-10T11:53:31.715Z",
-#     "university": {
-#       "id": 1,
-#       "name": "UAC",
-#       "countryId": 1,
-#       "createdAt": "2026-05-10T11:53:12.282Z",
-#       "updatedAt": "2026-05-10T11:52:29.206Z",
-#       "country": {
-#         "id": 1,
-#         "name": "Benin",
-#         "createdAt": "2026-05-10T11:06:54.272Z",
-#         "updatedAt": "2026-05-10T11:06:15.403Z"
-#       }
-#     }
-#   }
-# }
-
-### ------------------------------------------------------------
-### MODULE : AUTHENTICATION
-### ------------------------------------------------------------
-
-# @name register
-# Inscription (Email, Password, Nom, Prénom, ID de la Branche choisie)
-POST {{baseUrl}}/auth/register
-Content-Type: {{contentType}}
+### Auth - Register
+POST {{host}}/auth/register
+Content-Type: application/json
 
 {
-    "email": "dev.test+tisto2@fieri.com",
-    "password": "Password123!",
-    "firstName": "Tisto",
-    "lastName": "Dev",
-    "branchId": 1
+  "email": "candidat@fieri.com",
+  "password": "SecurePassword123!",
+  "firstName": "Alexandre",
+  "lastName": "Vidal",
+  "branchId": 1,
+  "role": "CHERCHEUR"
 }
 
-#Résultat
-#Si utilisateur enregistré
-# {
-#   "message": "Cet email est déjà utilisé",
-#   "error": "Conflict",
-#   "statusCode": 409
-# }
-
-# sinon
-
-# {
-#   "success": true,
-#   "message": "Inscription réussie",
-#   "data": {
-#     "id": 4,
-#     "firstname": "Tisto",
-#     "lastname": "Dev",
-#     "email": "dev.test+tisto2@fieri.com",
-#     "isActive": true,
-#     "branchId": 1,
-#     "createdAt": "2026-05-23T03:29:39.856Z",
-#     "updatedAt": "2026-05-23T03:29:39.856Z"
-#   }
-# }
-
-###
-
-# @name login
-# Connexion pour obtenir le jeton JWT
-POST {{baseUrl}}/auth/login
-Content-Type: {{contentType}}
+### Auth - Login
+POST {{host}}/auth/login
+Content-Type: application/json
 
 {
-    "email": "dev.test+tisto@fieri.com",
-    "password": "Password123!"
+  "email": "chercheur@fieri.dev",
+  "password": "MyPassword1!"
 }
 
-#Résultat
-# {
-#   "success": true,
-#   "message": "Connexion réussie",
-#   "data": {
-#     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsImVtYWlsIjoiZGV2LnRlc3QrdGlzdG9AZmllcmkuY29tIiwiaWF0IjoxNzc5NTA3MDA1LCJleHAiOjE3Nzk1OTM0MDV9.KDXLvcTpPlfapLdfiH8TaLUUt77QLOXQgOc-yEFccQI",
-#     "member": {
-#       "id": 3,
-#       "email": "dev.test+tisto@fieri.com",
-#       "firstName": "Tisto",
-#       "lastName": "Dev"
-#     }
-#   }
-# }
+### Members - Me (protected)
+GET {{host}}/members/me
+Authorization: Bearer {{token}}
 
-### Capture automatique du Token après le login
-@authToken = {{login.response.body.data.access_token}}
+### Countries - list
+GET {{host}}/countries
 
+### Countries - get by id
+GET {{host}}/countries/1
 
-### ------------------------------------------------------------
-### MODULE : MEMBERS (Routes Protégées)
-### ------------------------------------------------------------
+### Countries - universities by country
+GET {{host}}/countries/1/universities
 
-# @name getProfile
-# Voir mon profil (Nécessite le Token dans le Header)
-GET {{baseUrl}}/members/me
-Authorization: Bearer {{authToken}}
-Content-Type: {{contentType}}
+### Universities - branches
+GET {{host}}/universities/1/branches
 
-#Résultat
-# {
-#   "success": true,
-#   "message": "Profil récupéré",
-#   "data": {
-#     "id": 3,
-#     "email": "dev.test+tisto@fieri.com"
-#   }
-# }
+### University - get by id
+GET {{host}}/universities/1
 
-### ------------------------------------------------------------
-### MODULE : ORGANIZATION (Création / POST)
-### ------------------------------------------------------------
+### Branch - get by id
+GET {{host}}/branches/1
 
-# @name createCountry
-# Créer un pays (Ex: Bénin)
-POST {{baseUrl}}/countries
-Content-Type: {{contentType}}
+### Projects - list (optional filters)
+GET {{host}}/projects
+
+GET {{host}}/projects?clubId=club-1&status=Actif&search=Rover
+
+### Project - details
+GET {{host}}/projects/proj-101
+
+### Project - follow/unfollow (protected)
+POST {{host}}/projects/proj-101/follow
+Authorization: Bearer {{token}}
+
+### Project - support (protected)
+POST {{host}}/projects/proj-101/support
+Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-    "name": "Niger"
+  "amount": 150,
+  "message": "Félicitations pour ces recherches !"
 }
 
-#Résultat
-# {
-#   "success": true,
-#   "message": "Pays créé avec succès",
-#   "data": {
-#     "id": 4,
-#     "name": "Niger",
-#     "createdAt": "2026-05-23T03:31:25.549Z",
-#     "updatedAt": "2026-05-23T03:31:25.549Z"
-#   }
-# }
+### Clubs - list
+GET {{host}}/clubs
 
-###
+### Club - detail
+GET {{host}}/clubs/club-1
 
-# @name createUniversity
-# Créer une université liée au pays (Utilise l'ID du pays créé, ex: 1)
-POST {{baseUrl}}/universities
-Content-Type: {{contentType}}
+### Club - join (protected)
+POST {{host}}/clubs/club-1/join
+Authorization: Bearer {{token}}
+
+### Club - leave (protected)
+DELETE {{host}}/clubs/club-1/join
+Authorization: Bearer {{token}}
+
+### Workshops - list
+GET {{host}}/workshops
+
+### Workshop - register (protected)
+POST {{host}}/workshops/work-101/register
+Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-    "name": "Université Abdou Moumouni (UAM)",
-    "countryId": 4
+  "userFullName": "Alexandre Vidal"
 }
 
-#Résultat
-# {
-#   "success": true,
-#   "message": "Université créée avec succès",
-#   "data": {
-#     "id": 6,
-#     "name": "Université Abdou Moumouni (UAM)",
-#     "countryId": 4,
-#     "createdAt": "2026-05-23T03:33:23.603Z",
-#     "updatedAt": "2026-05-23T03:33:23.603Z"
-#   }
-# }
+### Workshop - deregister (protected)
+DELETE {{host}}/workshops/work-101/register
+Authorization: Bearer {{token}}
 
-###
+### Events - list
+GET {{host}}/events
 
-# @name createBranch
-# Créer une branche liée à l'université (Utilise l'ID de l'université, ex: 1)
-POST {{baseUrl}}/branches
-Content-Type: {{contentType}}
+### Event - register (protected)
+POST {{host}}/events/event-101/register
+Authorization: Bearer {{token}}
+
+### Researchers - list
+GET {{host}}/researchers
+
+### Researcher - details
+GET {{host}}/researchers/101
+
+### Researcher - my profile (protected)
+GET {{host}}/researchers/me
+Authorization: Bearer {{token}}
+
+### Researcher - update my profile (protected)
+PUT {{host}}/researchers/me
+Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
-    "name": "Electronique embarquée",
-    "universityId": 6
+  "bio": "Expert en vision artificielle.",
+  "skills": ["Python", "OpenCV", "TensorFlow"],
+  "avatarUrl": "https://example.com/avatar.jpg"
 }
 
-#Résultat
-# {
-#   "success": true,
-#   "message": "Branche créée avec succès",
-#   "data": {
-#     "id": 3,
-#     "name": "Electronique embarquée",
-#     "universityId": 6,
-#     "createdAt": "2026-05-23T03:35:12.894Z",
-#     "updatedAt": "2026-05-23T03:35:12.894Z"
-#   }
-# }
+### Researcher - follow (protected)
+POST {{host}}/researchers/101/follow
+Authorization: Bearer {{token}}
+
+### News - list (public, optional includePending)
+GET {{host}}/news
+
+GET {{host}}/news?includePending=true
+
+### News - get
+GET {{host}}/news/news-101
+
+### News - create (protected)
+POST {{host}}/news
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "title": "Avancées en Fusion Nucléaire",
+  "content": "Corps de l'article...",
+  "category": "Physique"
+}
+
+### News - approve (admin, protected)
+PATCH {{host}}/news/news-101/approve
+Authorization: Bearer {{token}}
+
+### News - delete (protected)
+DELETE {{host}}/news/news-101
+Authorization: Bearer {{token}}
+
+### Dashboard - my stats (protected)
+GET {{host}}/dashboard/me
+Authorization: Bearer {{token}}
+
+### Notifications - list (protected)
+GET {{host}}/notifications
+Authorization: Bearer {{token}}
+
+### Notifications - mark as read (protected)
+PUT {{host}}/notifications/notif-101/read
+Authorization: Bearer {{token}}
+
+### Contact - submit message
+POST {{host}}/contact
+Content-Type: application/json
+
+{
+  "name": "Professeur Dupont",
+  "email": "dupont@sorbonne.fr",
+  "subject": "Partenariat R&D",
+  "message": "Texte du message..."
+}
+
+### Tasks - get by project (protected)
+GET {{host}}/tasks/project/proj-101
+Authorization: Bearer {{token}}
+
+### Tasks - create (protected, role CHEF_DE_PROJET/ADMIN)
+POST {{host}}/tasks
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "projectId": "proj-101",
+  "title": "Intégration du LiDAR",
+  "status": "TODO",
+  "priority": "HIGH",
+  "assignedTo": "Alexandre Vidal"
+}
+
+### Tasks - update status (protected)
+PUT {{host}}/tasks/task-101
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "IN_PROGRESS"
+}
+
+### Tasks - assign (protected)
+PATCH {{host}}/tasks/task-101/assign
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "assignedTo": "Tisto Dev"
+}
+
+### Tasks - priority (protected)
+PATCH {{host}}/tasks/task-101/priority
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "priority": "MEDIUM"
+}
+
+### Tasks - delete (protected)
+DELETE {{host}}/tasks/task-101
+Authorization: Bearer {{token}}
+
+### Badges - get by user
+GET {{host}}/badges/user/101
+
+### Badges - award (protected)
+POST {{host}}/badges/award
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "userId": 101,
+  "userName": "Alexandre Vidal",
+  "badgeType": "CONTRIBUTOR_GOLD",
+  "awardedBy": "Conseil"
+}
+
+### Badges - revoke (protected)
+DELETE {{host}}/badges/badge-101
+Authorization: Bearer {{token}}
+
+### Memberships - create request (protected)
+POST {{host}}/memberships/requests
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clubId": "club-1"
+}
+
+### Memberships - pending requests (protected, role RESPONSABLE/ADMIN)
+GET {{host}}/memberships/requests/pending/club-1
+Authorization: Bearer {{token}}
+
+### Memberships - club history (protected)
+GET {{host}}/memberships/requests/club/club-1
+Authorization: Bearer {{token}}
+
+### Memberships - user requests (protected)
+GET {{host}}/memberships/requests/user/101
+Authorization: Bearer {{token}}
+
+### Memberships - approve (protected, role RESPONSABLE/ADMIN)
+PATCH {{host}}/memberships/requests/req-4589/approve
+Authorization: Bearer {{token}}
+
+### Memberships - reject (protected, role RESPONSABLE/ADMIN)
+PATCH {{host}}/memberships/requests/req-4589/reject
+Authorization: Bearer {{token}}
+
+### Memberships - leave club (protected)
+DELETE {{host}}/memberships/club-1/user/101
+Authorization: Bearer {{token}}
+
+### Applications - submit (protected)
+POST {{host}}/applications
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "opportunityId": "opp-201",
+  "coverLetter": "Lettre de motivation...",
+  "cvUrl": "https://..."
+}
+
+### Applications - my applications (protected)
+GET {{host}}/applications/my
+Authorization: Bearer {{token}}
+
+### Applications - check applied (protected)
+GET {{host}}/applications/check/opp-201
+Authorization: Bearer {{token}}
+
+### Applications - get all for opportunity (protected, role CHEF_DE_PROJET/ADMIN)
+GET {{host}}/applications/opportunity/opp-201
+Authorization: Bearer {{token}}
+
+### Applications - update status (protected, role CHEF_DE_PROJET/ADMIN)
+PATCH {{host}}/applications/app-101/status
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "status": "APPROVED"
+}
