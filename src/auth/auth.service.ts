@@ -32,16 +32,27 @@ export class AuthService {
         firstname: data.firstName,
         lastname: data.lastName,
         branchId: data.branchId,
+        role: data.role || 'CHERCHEUR',
       },
     });
 
-    // 4. Supprimer le mot de passe de l'objet retourné par sécurité
-    const { password, ...result } = member;
+    // 4. Générer le token d'accès
+    const payload = { sub: member.id, email: member.email, role: member.role };
+    const access_token = await this.jwtService.signAsync(payload);
 
     return {
       success: true,
       message: 'Inscription réussie',
-      data: result,
+      data: {
+        access_token,
+        member: {
+          id: member.id,
+          email: member.email,
+          firstName: member.firstname,
+          lastName: member.lastname,
+          role: member.role,
+        },
+      },
     };
   }
 
@@ -63,8 +74,8 @@ export class AuthService {
       throw new UnauthorizedException('Identifiants invalides');
     }
 
-    // 3. Préparer le payload du JWT (ID et Email)
-    const payload = { sub: member.id, email: member.email };
+    // 3. Préparer le payload du JWT (ID, Email et Rôle)
+    const payload = { sub: member.id, email: member.email, role: member.role };
 
     // 4. Retourner le token et les infos de base
     return {
@@ -77,6 +88,7 @@ export class AuthService {
           email: member.email,
           firstName: member.firstname,
           lastName: member.lastname,
+          role: member.role,
         },
       },
     };

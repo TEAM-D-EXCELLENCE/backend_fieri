@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -64,6 +62,230 @@ model Member {
   branchId     Int
   branch       Branch       @relation(fields: [branchId], references: [id])
 
+  // Nouveaux champs pour le profil Chercheur
+  role         String       @default("CHERCHEUR") // CHERCHEUR, CHEF_DE_PROJET, MENTOR, RESPONSABLE, ADMIN
+  bio          String?
+  skills       String[]     @default([])
+  avatarUrl    String?
+  distinctions String[]     @default([])
+
+  // Relations
+  starredProjects     ProjectFollow[]
+  contributions       ProjectContribution[]
+  clubMemberships     ClubMembership[]
+  workshopRegistrations WorkshopRegistration[]
+  eventRegistrations   EventRegistration[]
+  authoredNews        News[]
+  notifications       Notification[]
+  badges              Badge[]
+  applications        Application[]
+  followers           ResearcherFollow[] @relation("following")
+  following           ResearcherFollow[] @relation("follower")
+
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+}
+
+model Project {
+  id           String       @id // e.g., "proj-101"
+  title        String
+  summary      String
+  description  String?
+  status       String       @default("Actif") // Actif, Terminé, etc.
+  stars        Int          @default(0)
+  budgetRaised Int          @default(0)
+  technologies String[]     @default([])
+  team         Json         @default("[]") // [{ name, role }]
+
+  clubId       String?
+  club         Club?        @relation(fields: [clubId], references: [id])
+
+  followers    ProjectFollow[]
+  contributions ProjectContribution[]
+  tasks        Task[]
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model ProjectFollow {
+  memberId     Int
+  member       Member       @relation(fields: [memberId], references: [id])
+  projectId    String
+  project      Project      @relation(fields: [projectId], references: [id])
+
+  @@id([memberId, projectId])
+}
+
+model ProjectContribution {
+  id           String       @id @default(uuid())
+  projectId    String
+  project      Project      @relation(fields: [projectId], references: [id])
+  memberId     Int
+  member       Member       @relation(fields: [memberId], references: [id])
+  amount       Int
+  message      String?
+  createdAt    DateTime     @default(now())
+}
+
+model Club {
+  id           String       @id // e.g., "club-1"
+  name         String
+  discipline   String
+  description  String?
+
+  memberships  ClubMembership[]
+  projects     Project[]
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model ClubMembership {
+  id           String       @id @default(uuid())
+  clubId       String
+  club         Club         @relation(fields: [clubId], references: [id])
+  memberId     Int
+  member       Member       @relation(fields: [memberId], references: [id])
+  status       String       @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([clubId, memberId])
+}
+
+model Workshop {
+  id              String       @id // e.g., "work-101"
+  title           String
+  instructor      String
+  capacity        Int
+  registrations   WorkshopRegistration[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model WorkshopRegistration {
+  id              String       @id @default(uuid())
+  workshopId      String
+  workshop        Workshop     @relation(fields: [workshopId], references: [id])
+  memberId        Int
+  member          Member       @relation(fields: [memberId], references: [id])
+  userFullName    String
+  status          String       @default("REGISTERED") // REGISTERED, WAITLISTED
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([workshopId, memberId])
+}
+
+model Event {
+  id              String       @id // e.g., "event-101"
+  title           String
+  date            DateTime
+  isLive          Boolean      @default(false)
+  streamUrl       String
+
+  registrations   EventRegistration[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model EventRegistration {
+  id              String       @id @default(uuid())
+  eventId         String
+  event           Event        @relation(fields: [eventId], references: [id])
+  memberId        Int
+  member          Member       @relation(fields: [memberId], references: [id])
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([eventId, memberId])
+}
+
+model News {
+  id              String       @id @default(uuid()) // e.g., "news-101"
+  title           String
+  content         String
+  category        String
+  status          String       @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  authorId        Int
+  author          Member       @relation(fields: [authorId], references: [id])
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Notification {
+  id              String       @id @default(uuid())
+  memberId        Int
+  member          Member       @relation(fields: [memberId], references: [id])
+  title           String
+  message         String
+  read            Boolean      @default(false)
+  
+  createdAt       DateTime     @default(now())
+}
+
+model ContactMessage {
+  id              String       @id @default(uuid())
+  name            String
+  email           String
+  subject         String
+  message         String
+
+  createdAt       DateTime     @default(now())
+}
+
+model Task {
+  id              String       @id @default(uuid()) // e.g., "task-101"
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id])
+  title           String
+  status          String       @default("TODO") // TODO, IN_PROGRESS, DONE
+  priority        String       @default("MEDIUM") // LOW, MEDIUM, HIGH
+  assignedTo      String?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model Badge {
+  id              String       @id @default(uuid())
+  userId          Int
+  user            Member       @relation(fields: [userId], references: [id])
+  badgeType       String       // e.g., CONTRIBUTOR_GOLD
+  userName        String
+  awardedBy       String
+
+  createdAt       DateTime     @default(now())
+}
+
+model Application {
+  id              String       @id @default(uuid())
+  opportunityId   String
+  memberId        Int
+  member          Member       @relation(fields: [memberId], references: [id])
+  coverLetter     String
+  cvUrl           String
+  status          String       @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@unique([opportunityId, memberId])
+}
+
+model ResearcherFollow {
+  followerId   Int
+  follower     Member       @relation("follower", fields: [followerId], references: [id])
+  followingId  Int
+  following    Member       @relation("following", fields: [followingId], references: [id])
+
+  @@id([followerId, followingId])
 }

@@ -1,0 +1,184 @@
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+
+@Injectable()
+export class ProjectService {
+  constructor(private prisma: PrismaService) {}
+
+  async getProjects(memberId?: number, clubId?: string, status?: string, search?: string) {
+    const whereClause: any = {};
+
+    if (clubId) {
+      whereClause.clubId = clubId;
+    }
+
+    if (status) {
+      whereClause.status = status;
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { summary: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    const projects = await this.prisma.project.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    let starredProjectIds = new Set<string>();
+    if (memberId) {
+      const follows = await this.prisma.projectFollow.findMany({
+        where: { memberId },
+      });
+      starredProjectIds = new Set(follows.map(f => f.projectId));
+    }
+
+    const formattedProjects = projects.map(p => ({
+      id: p.id,
+      title: p.title,
+      summary: p.summary,
+      status: p.status,
+      clubId: p.clubId,
+      stars: p.stars,
+      starred: starredProjectIds.has(p.id),
+      budgetRaised: p.budgetRaised,
+      technologies: p.technologies,
+    }));
+
+    return {
+      success: true,
+      data: formattedProjects,
+    };
+  }
+
+  async getProjectById(id: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Projet non trouvé');
+    }
+
+    // team est un Json. On le caste en any[] ou array pour la réponse
+    let teamArray: any[] = [];
+    try {
+      if (project.team && typeof project.team === 'string') {
+        teamArray = JSON.parse(project.team);
+      } else if (Array.isArray(project.team)) {
+        teamArray = project.team;
+      }
+    } catch (e) {
+      teamArray = [];
+    }
+
+    return {
+      success: true,
+      data: {
+        id: project.id,
+        title: project.title,
+        description: project.description || project.summary,
+        team: teamArray,
+        stars: project.stars,
+        budgetRaised: project.budgetRaised,
+      },
+    };
+  }
+
+  async toggleFollowProject(id: string, memberId: number) {
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Projet non trouvé');
+    }
+
+    const existingFollow = await this.prisma.projectFollow.findUnique({
+      where: {
+        memberId_projectId: {
+          memberId,
+          projectId: id,
+        },
+      },
+    });
+
+    let starred = false;
+    let message = '';
+
+    if (existingFollow) {
+      // Unfollow
+      await this.prisma.projectFollow.delete({
+        where: {
+          memberId_projectId: {
+            memberId,
+            projectId: id,
+          },
+        },
+      });
+
+      await this.prisma.project.update({
+        where: { id },
+        data: { stars: { decrement: 1 } },
+      });
+
+      starred = false;
+      message = 'Projet retiré des favoris.';
+    } else {
+      // Follow
+      await this.prisma.projectFollow.create({
+        data: {
+          memberId,
+          projectId: id,
+        },
+      });
+
+      await this.prisma.project.update({
+        where: { id },
+        data: { stars: { increment: 1 } },
+      });
+
+      starred = true;
+      message = 'Projet ajouté aux favoris.';
+    }
+
+    return {
+      success: true,
+      starred,
+      message,
+    };
+  }
+
+  async supportProject(id: string, memberId: number, amount: number, message?: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Projet non trouvé');
+    }
+
+    await this.prisma.projectContribution.create({
+      data: {
+        projectId: id,
+        memberId,
+        amount,
+        message,
+      },
+    });
+
+    const updatedProject = await this.prisma.project.update({
+      where: { id },
+      data: { budgetRaised: { increment: amount } },
+    });
+
+    return {
+      success: true,
+      message: 'Contribution enregistrée.',
+      newBudget: updatedProject.budgetRaised,
+    };
+  }
+}

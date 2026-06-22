@@ -5,6 +5,8 @@ import { JwtModule } from '@nestjs/jwt'; // <--- Import indispensable
 import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from '../prisma/prisma.module';
 import { JwtStrategy } from './jwt.strategy';
+import { RolesGuard } from './roles.guard';
+import { OptionalJwtAuthGuard } from './optional-jwt-auth.guard';
 
 @Module({
   imports: [
@@ -17,8 +19,8 @@ import { JwtStrategy } from './jwt.strategy';
       signOptions: { expiresIn: '24h' }, // Le token expirera après un jour
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, RolesGuard, OptionalJwtAuthGuard],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, RolesGuard, OptionalJwtAuthGuard],
 })
 export class AuthModule {}

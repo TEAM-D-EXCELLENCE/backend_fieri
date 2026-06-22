@@ -1,18 +1,23 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, NotFoundException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { MembersService } from './members.service';
 
 @Controller('members')
 export class MembersController {
+  constructor(private readonly membersService: MembersService) {}
   
-  @UseGuards(AuthGuard('jwt')) // Protège la route : seul un membre avec un token valide passe
+  @UseGuards(AuthGuard('jwt')) // Protège la route
   @Get('me')
   async getProfile(@Request() req) {
-    // req.user contient ce qu'on a mis dans le payload du JWT (userId, email)
-    // On peut renvoyer req.user directement ou chercher les infos complètes en base
+    // req.user contient le payload du JWT { id, email }
+    const member = await this.membersService.getMemberById(req.user.id);
+    if (!member) {
+      throw new NotFoundException('Membre non trouvé');
+    }
     return {
       success: true,
       message: "Profil récupéré",
-      data: req.user 
+      data: member 
     };
   }
 }
