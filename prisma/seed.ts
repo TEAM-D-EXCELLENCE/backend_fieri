@@ -9,6 +9,7 @@ async function main() {
   // 1. Nettoyer la base de données
   // (L'ordre est important pour respecter les contraintes d'intégrité référentielle)
   await prisma.application.deleteMany({});
+  await prisma.opportunity.deleteMany({});
   await prisma.badge.deleteMany({});
   await prisma.task.deleteMany({});
   await prisma.contactMessage.deleteMany({});
@@ -175,6 +176,7 @@ async function main() {
       budgetRaised: 4200,
       technologies: ['ROS2', 'C++', 'LiDAR', 'Python'],
       clubId: clubRobotique.id,
+      ownerId: researcher.id,
       team: JSON.stringify([
         { name: 'Alexandre Vidal', role: 'Chercheur Principal' },
         { name: 'Sarah Koffi', role: 'Chef de projet' },
@@ -276,6 +278,35 @@ async function main() {
   });
 
   console.log('Badges créés.');
+
+  // 11. Créer des opportunités
+  await prisma.opportunity.create({
+    data: {
+      id: 'opp-201',
+      title: 'Doctorat en Robotique Mobile',
+      description: 'Sujet : Planification de trajectoires optimales en milieu encombré.',
+      type: 'Doctorat',
+      discipline: 'Robotique',
+      salary: 2100,
+      status: 'Active',
+      authorId: lead.id,
+    },
+  });
+
+  await prisma.opportunity.create({
+    data: {
+      id: 'opp-202',
+      title: 'Stage R&D Vision par Ordinateur',
+      description: 'Fusion de données caméra et lidar pour détection d\'obstacles.',
+      type: 'Stage',
+      discipline: 'IA / Vision',
+      salary: 600,
+      status: 'Active',
+      authorId: researcher.id,
+    },
+  });
+
+  console.log('Opportunités créées.');
 
   console.log('Seeding terminé avec succès !');
 }

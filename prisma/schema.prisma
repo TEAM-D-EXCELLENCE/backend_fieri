@@ -81,6 +81,8 @@ model Member {
   applications        Application[]
   followers           ResearcherFollow[] @relation("following")
   following           ResearcherFollow[] @relation("follower")
+  opportunities       Opportunity[]
+  projects            Project[]          @relation("ProjectOwner")
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -99,6 +101,9 @@ model Project {
 
   clubId       String?
   club         Club?        @relation(fields: [clubId], references: [id])
+
+  ownerId      Int?
+  owner        Member?      @relation("ProjectOwner", fields: [ownerId], references: [id])
 
   followers    ProjectFollow[]
   contributions ProjectContribution[]
@@ -266,9 +271,28 @@ model Badge {
   createdAt       DateTime     @default(now())
 }
 
+model Opportunity {
+  id           String        @id @default(uuid())
+  title        String
+  description  String
+  type         String        // Doctorat, R&D, Stage, etc.
+  discipline   String        // IA, Robotique, etc.
+  salary       Int?          // Salaire/Gratification
+  status       String        @default("Active") // Active, Closed
+
+  authorId     Int
+  author       Member        @relation(fields: [authorId], references: [id])
+
+  applications Application[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
 model Application {
   id              String       @id @default(uuid())
   opportunityId   String
+  opportunity     Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   memberId        Int
   member          Member       @relation(fields: [memberId], references: [id])
   coverLetter     String

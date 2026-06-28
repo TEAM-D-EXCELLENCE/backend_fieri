@@ -1,0 +1,53 @@
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../../auth/roles.decorator';
+import { RolesGuard } from '../../auth/roles.guard';
+import { OpportunityService } from './opportunity.service';
+
+@Controller('opportunities')
+export class OpportunityController {
+  constructor(private readonly opportunityService: OpportunityService) {}
+
+  @Get()
+  async getOpportunities(
+    @Query('type') type?: string,
+    @Query('domain') domain?: string,
+    @Query('status') status?: string,
+  ) {
+    return this.opportunityService.getOpportunities({ type, domain, status });
+  }
+
+  @Get(':id')
+  async getOpportunityById(@Param('id') id: string) {
+    return this.opportunityService.getOpportunityById(id);
+  }
+
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('CHERCHEUR', 'ADMIN')
+  @Post()
+  async createOpportunity(
+    @Request() req,
+    @Body() data: { title: string; description: string; type: string; discipline: string; salary?: number },
+  ) {
+    return this.opportunityService.createOpportunity(req.user.id, data);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Put(':id')
+  async updateOpportunity(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() data: Partial<{ title: string; description: string; type: string; discipline: string; salary: number; status: string }>,
+  ) {
+    return this.opportunityService.updateOpportunity(id, req.user.id, req.user.role, data);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  async deleteOpportunity(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.opportunityService.deleteOpportunity(id, req.user.id, req.user.role);
+  }
+}

@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Param, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { DashboardService } from './dashboard.service';
 
@@ -16,5 +16,11 @@ export class NotificationController {
   @Put(':id/read')
   async markAsRead(@Param('id') id: string, @Request() req) {
     return this.dashboardService.markNotificationAsRead(id, req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete()
+  async clearNotifications(@Request() req) {
+    return this.dashboardService.clearMyNotifications(req.user.id);
   }
 }

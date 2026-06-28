@@ -90,4 +90,26 @@ async createCountry(name: string) {
     });
     return { success: true, message: "Branche créée avec succès", data: branch };
   }
+
+  async getUniversities() {
+    const universities = await this.prisma.university.findMany({
+      orderBy: { name: 'asc' },
+    });
+    return {
+      success: true,
+      message: 'Liste de toutes les universités récupérée',
+      data: universities,
+    };
+  }
+
+  async getBranches() {
+    const branches = await this.prisma.branch.findMany({
+      orderBy: { name: 'asc' },
+    });
+    return {
+      success: true,
+      message: 'Liste de toutes les branches récupérée',
+      data: branches,
+    };
+  }
 }

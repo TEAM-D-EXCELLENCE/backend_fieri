@@ -16,6 +16,7 @@ import { ContactModule } from './modules/contact/contact.module';
 import { TaskModule } from './modules/task/task.module';
 import { BadgeModule } from './modules/badge/badge.module';
 import { ApplicationModule } from './modules/application/application.module';
+import { OpportunityModule } from './modules/opportunity/opportunity.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { ApplicationModule } from './modules/application/application.module';
     TaskModule,
     BadgeModule,
     ApplicationModule,
+    OpportunityModule,
   ],
   controllers: [AppController],
   providers: [AppService],

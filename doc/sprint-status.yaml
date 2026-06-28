@@ -1,0 +1,79 @@
+# generated: 2026-05-30T19:17:00+01:00
+# last_updated: 2026-05-31T22:10:00+01:00
+# project: Fieri
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-05-30T19:17:00+01:00
+last_updated: 2026-06-03T12:30:00+01:00
+project: Fieri
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  epic-1: done
+  1-1-core-shell-dual-theme-design-system-setup: done
+  1-2-hybrid-api-engine-local-mock-database: done
+  1-3-university-authentication-gating-engine-authcontext: done
+  1-4-universal-command-palette-k: done
+  1-5-intelligent-contact-support-panel: done
+  epic-1-retrospective: optional
+
+  epic-2: done
+  2-1-community-directory-interactive-filters: done
+  2-2-researcher-profiles-subscriber-statistics: done
+  2-3-scientific-carousel-micro-animations: done
+  2-4-progressive-skeleton-loading: done
+  epic-2-retrospective: optional
+
+  epic-3: done
+  3-1-bento-grid-research-projects-hub: done
+  3-2-project-details-interactive-follow: done
+  3-3-interactive-financial-pledge-modale: done
+  3-4-scientific-opportunities-hub-applications: done
+  epic-3-retrospective: optional
+
+  epic-4: done
+  4-1-specialized-clubs-hub-accent-themes: done
+  4-2-academic-workshops-catalogue-filters: done
+  4-3-interactive-workshop-registration-waitlist-engine: done
+  4-4-automatic-waiting-list-reallocation: done
+  epic-4-retrospective: optional
+
+  epic-5: done
+  5-1-scientific-news-hub-peer-review-flow: done
+  5-2-scientific-events-selective-live-streaming: done
+  5-3-interactive-personal-dashboard-notifications-center: done
+  5-4-private-researcher-profile-editing: done
+  epic-5-retrospective: done

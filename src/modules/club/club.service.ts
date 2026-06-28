@@ -340,4 +340,38 @@ export class ClubService {
       message: 'Vous avez quitté le club.',
     };
   }
+
+  async createClub(data: { id: string; name: string; discipline: string; description?: string }) {
+    const existing = await this.prisma.club.findUnique({
+      where: { id: data.id },
+    });
+    if (existing) {
+      throw new ConflictException('Un club avec cet identifiant existe déjà');
+    }
+    const club = await this.prisma.club.create({
+      data,
+    });
+    return {
+      success: true,
+      data: club,
+    };
+  }
+
+  async updateClub(id: string, data: Partial<{ name: string; discipline: string; description: string }>) {
+    const club = await this.prisma.club.findUnique({
+      where: { id },
+    });
+    if (!club) {
+      throw new NotFoundException('Club non trouvé');
+    }
+    const updated = await this.prisma.club.update({
+      where: { id },
+      data,
+    });
+    return {
+      success: true,
+      data: updated,
+    };
+  }
 }
+

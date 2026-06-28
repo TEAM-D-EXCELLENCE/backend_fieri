@@ -63,4 +63,14 @@ export class OrganizationController {
   ) {
     return this.organizationService.createBranch(name, universityId);
   }
+
+  @Get('universities')
+  findAllUniversities() {
+    return this.organizationService.getUniversities();
+  }
+
+  @Get('branches')
+  findAllBranches() {
+    return this.organizationService.getBranches();
+  }
 }

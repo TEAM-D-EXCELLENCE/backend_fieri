@@ -77,4 +77,15 @@ export class DashboardService {
       message: 'Notification marquée comme lue.',
     };
   }
+
+  async clearMyNotifications(memberId: number) {
+    await this.prisma.notification.deleteMany({
+      where: { memberId },
+    });
+
+    return {
+      success: true,
+      message: 'Toutes les notifications ont été supprimées.',
+    };
+  }
 }

@@ -138,4 +138,29 @@ export class NewsService {
       message: 'Article supprimé.',
     };
   }
+
+  async updateNews(id: string, memberId: number, role: string, data: Partial<{ title: string; content: string; category: string }>) {
+    const news = await this.prisma.news.findUnique({
+      where: { id },
+    });
+
+    if (!news) {
+      throw new NotFoundException('Article non trouvé');
+    }
+
+    if (news.authorId !== memberId && role !== 'ADMIN') {
+      throw new ForbiddenException("Vous n'avez pas l'autorisation de modifier cet article.");
+    }
+
+    const updated = await this.prisma.news.update({
+      where: { id },
+      data,
+    });
+
+    return {
+      success: true,
+      data: updated,
+    };
+  }
 }
+

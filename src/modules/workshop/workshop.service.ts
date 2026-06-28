@@ -165,4 +165,130 @@ export class WorkshopService {
       message: 'Désinscription prise en compte.',
     };
   }
+
+  async getWorkshopById(id: string) {
+    const workshop = await this.prisma.workshop.findUnique({
+      where: { id },
+      include: {
+        registrations: {
+          include: {
+            member: true,
+          },
+        },
+      },
+    });
+
+    if (!workshop) {
+      throw new NotFoundException('Atelier/Formation non trouvé');
+    }
+
+    const registered = workshop.registrations
+      .filter(r => r.status === 'REGISTERED')
+      .map(r => ({
+        id: r.member.id,
+        firstName: r.member.firstname,
+        lastName: r.member.lastname,
+      }));
+
+    const waitlisted = workshop.registrations
+      .filter(r => r.status === 'WAITLISTED')
+      .map(r => ({
+        id: r.member.id,
+        firstName: r.member.firstname,
+        lastName: r.member.lastname,
+      }));
+
+    return {
+      success: true,
+      data: {
+        id: workshop.id,
+        title: workshop.title,
+        instructor: workshop.instructor,
+        capacity: workshop.capacity,
+        registered,
+        waitlisted,
+      },
+    };
+  }
+
+  async createWorkshop(data: { id: string; title: string; instructor: string; capacity: number }) {
+    const existing = await this.prisma.workshop.findUnique({
+      where: { id: data.id },
+    });
+    if (existing) {
+      throw new ConflictException('Une formation avec cet identifiant existe déjà');
+    }
+    const workshop = await this.prisma.workshop.create({
+      data,
+    });
+    return {
+      success: true,
+      data: workshop,
+    };
+  }
+
+  async updateWorkshop(id: string, data: Partial<{ title: string; instructor: string; capacity: number }>) {
+    const workshop = await this.prisma.workshop.findUnique({
+      where: { id },
+    });
+    if (!workshop) {
+      throw new NotFoundException('Formation non trouvée');
+    }
+    const updated = await this.prisma.workshop.update({
+      where: { id },
+      data,
+    });
+    return {
+      success: true,
+      data: updated,
+    };
+  }
+
+  async registerToWorkshopWaitlist(workshopId: string, memberId: number, userFullName: string) {
+    const workshop = await this.prisma.workshop.findUnique({
+      where: { id: workshopId },
+    });
+
+    if (!workshop) {
+      throw new NotFoundException('Formation non trouvée');
+    }
+
+    const existing = await this.prisma.workshopRegistration.findUnique({
+      where: {
+        workshopId_memberId: {
+          workshopId,
+          memberId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new ConflictException('Vous êtes déjà inscrit ou sur la file d\'attente.');
+    }
+
+    const waitlistCount = await this.prisma.workshopRegistration.count({
+      where: {
+        workshopId,
+        status: 'WAITLISTED',
+      },
+    });
+    const position = waitlistCount + 1;
+
+    await this.prisma.workshopRegistration.create({
+      data: {
+        workshopId,
+        memberId,
+        userFullName,
+        status: 'WAITLISTED',
+      },
+    });
+
+    return {
+      success: true,
+      action: 'waitlisted',
+      position,
+      message: `Placé sur la file d'attente (Position #${position}).`,
+    };
+  }
 }
+

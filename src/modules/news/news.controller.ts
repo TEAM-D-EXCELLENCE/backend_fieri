@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Query, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
@@ -45,5 +45,15 @@ export class NewsController {
   @Delete(':id')
   async deleteNews(@Param('id') id: string, @Request() req) {
     return this.newsService.deleteNews(id, req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Put(':id')
+  async updateNews(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() data: Partial<{ title: string; content: string; category: string }>,
+  ) {
+    return this.newsService.updateNews(id, req.user.id, req.user.role, data);
   }
 }

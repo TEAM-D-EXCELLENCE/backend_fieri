@@ -169,4 +169,47 @@ export class ResearcherService {
       message,
     };
   }
+
+  async unfollowResearcher(followerId: number, followingId: number) {
+    if (followerId === followingId) {
+      throw new BadRequestException('Vous ne pouvez pas vous désabonner de vous-même.');
+    }
+
+    const followingMember = await this.prisma.member.findUnique({
+      where: { id: followingId },
+    });
+
+    if (!followingMember) {
+      throw new NotFoundException('Chercheur non trouvé');
+    }
+
+    const existingFollow = await this.prisma.researcherFollow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId,
+          followingId,
+        },
+      },
+    });
+
+    if (!existingFollow) {
+      throw new NotFoundException("Vous ne suivez pas ce chercheur.");
+    }
+
+    await this.prisma.researcherFollow.delete({
+      where: {
+        followerId_followingId: {
+          followerId,
+          followingId,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      following: false,
+      message: 'Vous ne suivez plus ce chercheur.',
+    };
+  }
 }
+

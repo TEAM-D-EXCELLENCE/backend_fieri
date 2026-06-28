@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
+import { Roles } from '../../auth/roles.decorator';
+import { RolesGuard } from '../../auth/roles.guard';
 import { ProjectService } from './project.service';
 
 @Controller('projects')
@@ -24,10 +26,45 @@ export class ProjectController {
     return this.projectService.getProjectById(id);
   }
 
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('CHERCHEUR', 'ADMIN')
+  @Post()
+  async createProject(
+    @Request() req,
+    @Body() data: { id: string; title: string; summary: string; description?: string; status?: string; technologies?: string[]; team?: any[]; clubId?: string },
+  ) {
+    return this.projectService.createProject(req.user.id, data);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Put(':id')
+  async updateProject(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() data: Partial<{ title: string; summary: string; description: string; status: string; technologies: string[]; team: any[]; clubId: string }>,
+  ) {
+    return this.projectService.updateProject(id, req.user.id, req.user.role, data);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  async deleteProject(
+    @Request() req,
+    @Param('id') id: string,
+  ) {
+    return this.projectService.deleteProject(id, req.user.id, req.user.role);
+  }
+
   @UseGuards(AuthGuard('jwt'))
   @Post(':id/follow')
   async followProject(@Param('id') id: string, @Request() req) {
     return this.projectService.toggleFollowProject(id, req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id/follow')
+  async unfollowProject(@Param('id') id: string, @Request() req) {
+    return this.projectService.unfollowProject(id, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'))

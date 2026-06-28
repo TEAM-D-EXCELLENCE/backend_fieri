@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -84,7 +84,91 @@ export class ProjectService {
         team: teamArray,
         stars: project.stars,
         budgetRaised: project.budgetRaised,
+        ownerId: project.ownerId,
       },
+    };
+  }
+
+  async createProject(memberId: number, data: { id: string; title: string; summary: string; description?: string; status?: string; technologies?: string[]; team?: any[]; clubId?: string }) {
+    const project = await this.prisma.project.create({
+      data: {
+        id: data.id,
+        title: data.title,
+        summary: data.summary,
+        description: data.description || null,
+        status: data.status || 'Actif',
+        technologies: data.technologies || [],
+        team: data.team ? JSON.stringify(data.team) : '[]',
+        clubId: data.clubId || null,
+        ownerId: memberId,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Projet créé avec succès.',
+      data: project,
+    };
+  }
+
+  async updateProject(
+    id: string,
+    memberId: number,
+    userRole: string,
+    data: Partial<{ title: string; summary: string; description: string; status: string; technologies: string[]; team: any[]; clubId: string }>,
+  ) {
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Projet non trouvé');
+    }
+
+    if (project.ownerId !== memberId && userRole !== 'ADMIN') {
+      throw new ForbiddenException("Vous n'êtes pas autorisé à modifier ce projet.");
+    }
+
+    const updated = await this.prisma.project.update({
+      where: { id },
+      data: {
+        title: data.title,
+        summary: data.summary,
+        description: data.description,
+        status: data.status,
+        technologies: data.technologies,
+        team: data.team ? JSON.stringify(data.team) : undefined,
+        clubId: data.clubId,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Projet mis à jour avec succès.',
+      data: updated,
+    };
+  }
+
+  async deleteProject(id: string, memberId: number, userRole: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Projet non trouvé');
+    }
+
+    if (project.ownerId !== memberId && userRole !== 'ADMIN') {
+      throw new ForbiddenException("Vous n'êtes pas autorisé à supprimer ce projet.");
+    }
+
+    await this.prisma.project.delete({
+      where: { id },
+    });
+
+    return {
+      success: true,
+      message: 'Projet supprimé avec succès.',
     };
   }
 
@@ -149,6 +233,51 @@ export class ProjectService {
       success: true,
       starred,
       message,
+    };
+  }
+
+  async unfollowProject(id: string, memberId: number) {
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+    });
+
+    if (!project) {
+      throw new NotFoundException('Projet non trouvé');
+    }
+
+    const existingFollow = await this.prisma.projectFollow.findUnique({
+      where: {
+        memberId_projectId: {
+          memberId,
+          projectId: id,
+        },
+      },
+    });
+
+    if (!existingFollow) {
+      return {
+        success: true,
+        message: 'Vous ne suivez pas ce projet.',
+      };
+    }
+
+    await this.prisma.projectFollow.delete({
+      where: {
+        memberId_projectId: {
+          memberId,
+          projectId: id,
+        },
+      },
+    });
+
+    await this.prisma.project.update({
+      where: { id },
+      data: { stars: { decrement: 1 } },
+    });
+
+    return {
+      success: true,
+      message: 'Désabonnement réussi.',
     };
   }
 

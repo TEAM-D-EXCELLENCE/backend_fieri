@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, UseGuards, Request, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, ParseIntPipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ResearcherService } from './researcher.service';
 
@@ -35,5 +35,11 @@ export class ResearcherController {
   @Post(':id/follow')
   async followResearcher(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.researcherService.toggleFollowResearcher(req.user.id, id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id/follow')
+  async unfollowResearcher(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.researcherService.unfollowResearcher(req.user.id, id);
   }
 }
