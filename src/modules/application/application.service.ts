@@ -59,6 +59,26 @@ export class ApplicationService {
     };
   }
 
+  async checkIfApplied(memberId: number, opportunityId: string) {
+    const application = await this.prisma.application.findUnique({
+      where: {
+        opportunityId_memberId: {
+          opportunityId,
+          memberId,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      hasApplied: !!application,
+      application: application ? {
+        id: application.id,
+        status: application.status,
+      } : null,
+    };
+  }
+
   async getOpportunityApplications(opportunityId: string) {
     const applications = await this.prisma.application.findMany({
       where: { opportunityId },

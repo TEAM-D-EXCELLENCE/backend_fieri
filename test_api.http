@@ -296,7 +296,7 @@ Authorization: Bearer {{token}}
 }
 
 ### Applications - my applications (protected)
-GET {{host}}/applications/my
+GET {{host}}/applications/me
 Authorization: Bearer {{token}}
 
 ### Applications - check applied (protected)

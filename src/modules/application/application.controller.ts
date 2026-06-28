@@ -18,20 +18,26 @@ export class ApplicationController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Get('my')
+  @Get('me')
   async getMyApplications(@Request() req) {
     return this.applicationService.getMyApplications(req.user.id);
   }
 
+  @UseGuards(AuthGuard('jwt'))
+  @Get('check/:opportunityId')
+  async checkIfApplied(@Param('opportunityId') opportunityId: string, @Request() req) {
+    return this.applicationService.checkIfApplied(req.user.id, opportunityId);
+  }
+
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('RESPONSABLE', 'ADMIN')
+  @Roles('CHEF_DE_PROJET', 'ADMIN')
   @Get('opportunity/:opportunityId')
   async getOpportunityApplications(@Param('opportunityId') opportunityId: string) {
     return this.applicationService.getOpportunityApplications(opportunityId);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('RESPONSABLE', 'ADMIN')
+  @Roles('CHEF_DE_PROJET', 'ADMIN')
   @Patch(':id/status')
   async updateStatus(
     @Param('id') id: string,
