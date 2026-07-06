@@ -53,7 +53,7 @@ async function main() {
   const salt = 10;
   const passwordHash = await bcrypt.hash('SecurePassword123!', salt);
 
-  // Chercheur standard
+  // Chercheur standard (défaut ETUDIANT; promu CHERCHEUR à but de démo)
   const researcher = await prisma.member.create({
     data: {
       firstname: 'Alexandre',
@@ -61,7 +61,7 @@ async function main() {
       email: 'candidat@fieri.com',
       password: passwordHash,
       branchId: branchCalavi.id,
-      role: 'CHERCHEUR',
+      role: 'ETUDIANT',
       bio: 'Expert en vision artificielle et Robotique Autonome.',
       skills: ['Python', 'OpenCV', 'ROS2', 'C++'],
       distinctions: ['Prix de l\'Innovation 2025'],

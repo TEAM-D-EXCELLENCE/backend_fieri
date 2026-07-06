@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
@@ -17,7 +26,13 @@ export class BadgeController {
   @Roles('MENTOR', 'ADMIN')
   @Post('award')
   async awardBadge(
-    @Body() data: { userId: number; userName: string; badgeType: string; awardedBy: string },
+    @Body()
+    data: {
+      userId: number;
+      userName: string;
+      badgeType: string;
+      awardedBy: string;
+    },
   ) {
     return this.badgeService.awardBadge(data);
   }

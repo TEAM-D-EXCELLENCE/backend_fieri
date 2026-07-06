@@ -1,20 +1,36 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class WorkshopService {
   constructor(private prisma: PrismaService) {}
 
-  async getWorkshops() {
-    const workshops = await this.prisma.workshop.findMany({
-      include: {
-        registrations: true,
-      },
-    });
+  async getWorkshops(page?: number, limit?: number) {
+    const skip = page && limit ? (page - 1) * limit : undefined;
+    const take = limit || undefined;
 
-    const data = workshops.map(w => {
-      const registeredCount = w.registrations.filter(r => r.status === 'REGISTERED').length;
-      const waitlistCount = w.registrations.filter(r => r.status === 'WAITLISTED').length;
+    const [workshops, total] = await Promise.all([
+      this.prisma.workshop.findMany({
+        skip,
+        take,
+        include: {
+          registrations: true,
+        },
+      }),
+      this.prisma.workshop.count(),
+    ]);
+
+    const data = workshops.map((w) => {
+      const registeredCount = w.registrations.filter(
+        (r) => r.status === 'REGISTERED',
+      ).length;
+      const waitlistCount = w.registrations.filter(
+        (r) => r.status === 'WAITLISTED',
+      ).length;
 
       return {
         id: w.id,
@@ -26,13 +42,28 @@ export class WorkshopService {
       };
     });
 
-    return {
+    const result: any = {
       success: true,
       data,
     };
+
+    if (page && limit) {
+      result.pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
+    return result;
   }
 
-  async registerToWorkshop(workshopId: string, memberId: number, userFullName: string) {
+  async registerToWorkshop(
+    workshopId: string,
+    memberId: number,
+    userFullName: string,
+  ) {
     const workshop = await this.prisma.workshop.findUnique({
       where: { id: workshopId },
     });
@@ -52,7 +83,9 @@ export class WorkshopService {
     });
 
     if (existing) {
-      throw new ConflictException('Vous êtes déjà inscrit ou sur la file d\'attente de cet atelier.');
+      throw new ConflictException(
+        "Vous êtes déjà inscrit ou sur la file d'attente de cet atelier.",
+      );
     }
 
     // Get counts
@@ -65,7 +98,7 @@ export class WorkshopService {
 
     let status = 'REGISTERED';
     let action = 'registered';
-    let message = 'Inscription confirmée pour l\'atelier.';
+    let message = "Inscription confirmée pour l'atelier.";
     let position = 0;
 
     if (registeredCount >= workshop.capacity) {
@@ -133,15 +166,17 @@ export class WorkshopService {
 
     // If the deleted registration was registered, promote the first person on waitlist
     if (registration.status === 'REGISTERED') {
-      const oldestWaitlisted = await this.prisma.workshopRegistration.findFirst({
-        where: {
-          workshopId,
-          status: 'WAITLISTED',
+      const oldestWaitlisted = await this.prisma.workshopRegistration.findFirst(
+        {
+          where: {
+            workshopId,
+            status: 'WAITLISTED',
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
         },
-        orderBy: {
-          createdAt: 'asc',
-        },
-      });
+      );
 
       if (oldestWaitlisted) {
         await this.prisma.workshopRegistration.update({
@@ -183,16 +218,16 @@ export class WorkshopService {
     }
 
     const registered = workshop.registrations
-      .filter(r => r.status === 'REGISTERED')
-      .map(r => ({
+      .filter((r) => r.status === 'REGISTERED')
+      .map((r) => ({
         id: r.member.id,
         firstName: r.member.firstname,
         lastName: r.member.lastname,
       }));
 
     const waitlisted = workshop.registrations
-      .filter(r => r.status === 'WAITLISTED')
-      .map(r => ({
+      .filter((r) => r.status === 'WAITLISTED')
+      .map((r) => ({
         id: r.member.id,
         firstName: r.member.firstname,
         lastName: r.member.lastname,
@@ -211,15 +246,16 @@ export class WorkshopService {
     };
   }
 
-  async createWorkshop(data: { id: string; title: string; instructor: string; capacity: number }) {
-    const existing = await this.prisma.workshop.findUnique({
-      where: { id: data.id },
-    });
-    if (existing) {
-      throw new ConflictException('Une formation avec cet identifiant existe déjà');
-    }
+  async createWorkshop(data: {
+    title: string;
+    instructor: string;
+    capacity: number;
+  }) {
     const workshop = await this.prisma.workshop.create({
-      data,
+      data: {
+        id: `work-${Date.now()}`,
+        ...data,
+      },
     });
     return {
       success: true,
@@ -227,7 +263,10 @@ export class WorkshopService {
     };
   }
 
-  async updateWorkshop(id: string, data: Partial<{ title: string; instructor: string; capacity: number }>) {
+  async updateWorkshop(
+    id: string,
+    data: Partial<{ title: string; instructor: string; capacity: number }>,
+  ) {
     const workshop = await this.prisma.workshop.findUnique({
       where: { id },
     });
@@ -244,7 +283,11 @@ export class WorkshopService {
     };
   }
 
-  async registerToWorkshopWaitlist(workshopId: string, memberId: number, userFullName: string) {
+  async registerToWorkshopWaitlist(
+    workshopId: string,
+    memberId: number,
+    userFullName: string,
+  ) {
     const workshop = await this.prisma.workshop.findUnique({
       where: { id: workshopId },
     });
@@ -263,7 +306,9 @@ export class WorkshopService {
     });
 
     if (existing) {
-      throw new ConflictException('Vous êtes déjà inscrit ou sur la file d\'attente.');
+      throw new ConflictException(
+        "Vous êtes déjà inscrit ou sur la file d'attente.",
+      );
     }
 
     const waitlistCount = await this.prisma.workshopRegistration.count({
@@ -291,4 +336,3 @@ export class WorkshopService {
     };
   }
 }
-

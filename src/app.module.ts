@@ -17,6 +17,8 @@ import { TaskModule } from './modules/task/task.module';
 import { BadgeModule } from './modules/badge/badge.module';
 import { ApplicationModule } from './modules/application/application.module';
 import { OpportunityModule } from './modules/opportunity/opportunity.module';
+import { PublicationModule } from './modules/publication/publication.module';
+import { ContributionModule } from './modules/contribution/contribution.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { OpportunityModule } from './modules/opportunity/opportunity.module';
     BadgeModule,
     ApplicationModule,
     OpportunityModule,
+    PublicationModule,
+    ContributionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

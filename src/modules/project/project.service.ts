@@ -1,11 +1,22 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class ProjectService {
   constructor(private prisma: PrismaService) {}
 
-  async getProjects(memberId?: number, clubId?: string, status?: string, search?: string) {
+  async getProjects(
+    memberId?: number,
+    clubId?: string,
+    status?: string,
+    search?: string,
+    page?: number,
+    limit?: number,
+  ) {
     const whereClause: any = {};
 
     if (clubId) {
@@ -23,20 +34,28 @@ export class ProjectService {
       ];
     }
 
-    const projects = await this.prisma.project.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-    });
+    const skip = page && limit ? (page - 1) * limit : undefined;
+    const take = limit || undefined;
+
+    const [projects, total] = await Promise.all([
+      this.prisma.project.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+      this.prisma.project.count({ where: whereClause }),
+    ]);
 
     let starredProjectIds = new Set<string>();
     if (memberId) {
       const follows = await this.prisma.projectFollow.findMany({
         where: { memberId },
       });
-      starredProjectIds = new Set(follows.map(f => f.projectId));
+      starredProjectIds = new Set(follows.map((f) => f.projectId));
     }
 
-    const formattedProjects = projects.map(p => ({
+    const formattedProjects = projects.map((p) => ({
       id: p.id,
       title: p.title,
       summary: p.summary,
@@ -48,10 +67,21 @@ export class ProjectService {
       technologies: p.technologies,
     }));
 
-    return {
+    const result: any = {
       success: true,
       data: formattedProjects,
     };
+
+    if (page && limit) {
+      result.pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
+    return result;
   }
 
   async getProjectById(id: string) {
@@ -89,10 +119,21 @@ export class ProjectService {
     };
   }
 
-  async createProject(memberId: number, data: { id: string; title: string; summary: string; description?: string; status?: string; technologies?: string[]; team?: any[]; clubId?: string }) {
+  async createProject(
+    memberId: number,
+    data: {
+      title: string;
+      summary: string;
+      description?: string;
+      status?: string;
+      technologies?: string[];
+      team?: any[];
+      clubId?: string;
+    },
+  ) {
     const project = await this.prisma.project.create({
       data: {
-        id: data.id,
+        id: `proj-${Date.now()}`,
         title: data.title,
         summary: data.summary,
         description: data.description || null,
@@ -115,7 +156,15 @@ export class ProjectService {
     id: string,
     memberId: number,
     userRole: string,
-    data: Partial<{ title: string; summary: string; description: string; status: string; technologies: string[]; team: any[]; clubId: string }>,
+    data: Partial<{
+      title: string;
+      summary: string;
+      description: string;
+      status: string;
+      technologies: string[];
+      team: any[];
+      clubId: string;
+    }>,
   ) {
     const project = await this.prisma.project.findUnique({
       where: { id },
@@ -126,7 +175,9 @@ export class ProjectService {
     }
 
     if (project.ownerId !== memberId && userRole !== 'ADMIN') {
-      throw new ForbiddenException("Vous n'êtes pas autorisé à modifier ce projet.");
+      throw new ForbiddenException(
+        "Vous n'êtes pas autorisé à modifier ce projet.",
+      );
     }
 
     const updated = await this.prisma.project.update({
@@ -159,7 +210,9 @@ export class ProjectService {
     }
 
     if (project.ownerId !== memberId && userRole !== 'ADMIN') {
-      throw new ForbiddenException("Vous n'êtes pas autorisé à supprimer ce projet.");
+      throw new ForbiddenException(
+        "Vous n'êtes pas autorisé à supprimer ce projet.",
+      );
     }
 
     await this.prisma.project.delete({
@@ -281,7 +334,12 @@ export class ProjectService {
     };
   }
 
-  async supportProject(id: string, memberId: number, amount: number, message?: string) {
+  async supportProject(
+    id: string,
+    memberId: number,
+    amount: number,
+    message?: string,
+  ) {
     const project = await this.prisma.project.findUnique({
       where: { id },
     });

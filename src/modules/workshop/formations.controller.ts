@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
@@ -9,8 +20,13 @@ export class FormationsController {
   constructor(private readonly workshopService: WorkshopService) {}
 
   @Get()
-  async getFormations() {
-    return this.workshopService.getWorkshops();
+  async getFormations(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : undefined;
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    return this.workshopService.getWorkshops(pageNum, limitNum);
   }
 
   @Get(':id')
@@ -22,7 +38,7 @@ export class FormationsController {
   @Roles('CHERCHEUR', 'ADMIN')
   @Post()
   async createFormation(
-    @Body() data: { id: string; title: string; instructor: string; capacity: number },
+    @Body() data: { title: string; instructor: string; capacity: number },
   ) {
     return this.workshopService.createWorkshop(data);
   }
@@ -32,7 +48,8 @@ export class FormationsController {
   @Put(':id')
   async updateFormation(
     @Param('id') id: string,
-    @Body() data: Partial<{ title: string; instructor: string; capacity: number }>,
+    @Body()
+    data: Partial<{ title: string; instructor: string; capacity: number }>,
   ) {
     return this.workshopService.updateWorkshop(id, data);
   }
@@ -44,7 +61,8 @@ export class FormationsController {
     @Request() req,
     @Body('userFullName') userFullName: string,
   ) {
-    const fullName = userFullName || `${req.user.firstname} ${req.user.lastname}`;
+    const fullName =
+      userFullName || `${req.user.firstname} ${req.user.lastname}`;
     return this.workshopService.registerToWorkshop(id, req.user.id, fullName);
   }
 
@@ -55,8 +73,13 @@ export class FormationsController {
     @Request() req,
     @Body('userFullName') userFullName: string,
   ) {
-    const fullName = userFullName || `${req.user.firstname} ${req.user.lastname}`;
-    return this.workshopService.registerToWorkshopWaitlist(id, req.user.id, fullName);
+    const fullName =
+      userFullName || `${req.user.firstname} ${req.user.lastname}`;
+    return this.workshopService.registerToWorkshopWaitlist(
+      id,
+      req.user.id,
+      fullName,
+    );
   }
 
   @UseGuards(AuthGuard('jwt'))

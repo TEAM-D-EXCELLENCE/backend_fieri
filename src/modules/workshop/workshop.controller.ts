@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { WorkshopService } from './workshop.service';
 
@@ -7,8 +17,18 @@ export class WorkshopController {
   constructor(private readonly workshopService: WorkshopService) {}
 
   @Get()
-  async getWorkshops() {
-    return this.workshopService.getWorkshops();
+  async getWorkshops(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : undefined;
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    return this.workshopService.getWorkshops(pageNum, limitNum);
+  }
+
+  @Get(':id')
+  async getWorkshop(@Param('id') id: string) {
+    return this.workshopService.getWorkshopById(id);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -18,7 +38,27 @@ export class WorkshopController {
     @Request() req,
     @Body('userFullName') userFullName: string,
   ) {
-    return this.workshopService.registerToWorkshop(id, req.user.id, userFullName);
+    return this.workshopService.registerToWorkshop(
+      id,
+      req.user.id,
+      userFullName,
+    );
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/waitlist')
+  async registerWaitlist(
+    @Param('id') id: string,
+    @Request() req,
+    @Body('userFullName') userFullName: string,
+  ) {
+    const fullName =
+      userFullName || `${req.user.firstname} ${req.user.lastname}`;
+    return this.workshopService.registerToWorkshopWaitlist(
+      id,
+      req.user.id,
+      fullName,
+    );
   }
 
   @UseGuards(AuthGuard('jwt'))

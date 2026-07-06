@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Put, Patch, Delete, Param, Query, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
@@ -14,10 +26,16 @@ export class NewsController {
   async getNews(
     @Request() req,
     @Query('includePending') includePending?: string,
+    @Query('featured') featured?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     const memberId = req.user ? req.user.id : undefined;
     const isIncludePending = includePending === 'true';
-    return this.newsService.getNews(isIncludePending, memberId);
+    const isFeatured = featured === 'true';
+    const pageNum = parseInt(page || '1', 10);
+    const limitNum = parseInt(limit || '20', 10);
+    return this.newsService.getNews(isIncludePending, memberId, isFeatured, pageNum, limitNum);
   }
 
   @Get(':id')
@@ -25,7 +43,8 @@ export class NewsController {
     return this.newsService.getNewsById(id);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('CHERCHEUR', 'ADMIN')
   @Post()
   async createNews(
     @Request() req,
@@ -47,7 +66,8 @@ export class NewsController {
     return this.newsService.deleteNews(id, req.user.id);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('CHERCHEUR', 'ADMIN')
   @Put(':id')
   async updateNews(
     @Param('id') id: string,

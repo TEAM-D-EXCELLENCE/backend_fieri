@@ -43,11 +43,14 @@ describe('ApplicationController', () => {
 
   describe('getMyApplications', () => {
     it('should call service.getMyApplications', async () => {
-      mockApplicationService.getMyApplications.mockResolvedValue({ success: true, data: [] });
+      mockApplicationService.getMyApplications.mockResolvedValue({
+        success: true,
+        data: [],
+      });
       const req = { user: { id: 1 } };
-      
+
       const result = await controller.getMyApplications(req);
-      
+
       expect(mockApplicationService.getMyApplications).toHaveBeenCalledWith(1);
       expect(result).toEqual({ success: true, data: [] });
     });
@@ -55,13 +58,24 @@ describe('ApplicationController', () => {
 
   describe('checkIfApplied', () => {
     it('should call service.checkIfApplied', async () => {
-      mockApplicationService.checkIfApplied.mockResolvedValue({ success: true, hasApplied: false, application: null });
+      mockApplicationService.checkIfApplied.mockResolvedValue({
+        success: true,
+        hasApplied: false,
+        application: null,
+      });
       const req = { user: { id: 1 } };
-      
+
       const result = await controller.checkIfApplied('opp-1', req);
-      
-      expect(mockApplicationService.checkIfApplied).toHaveBeenCalledWith(1, 'opp-1');
-      expect(result).toEqual({ success: true, hasApplied: false, application: null });
+
+      expect(mockApplicationService.checkIfApplied).toHaveBeenCalledWith(
+        1,
+        'opp-1',
+      );
+      expect(result).toEqual({
+        success: true,
+        hasApplied: false,
+        application: null,
+      });
     });
   });
 });

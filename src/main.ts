@@ -9,6 +9,7 @@ async function bootstrap() {
     origin: [
       'http://localhost:5173',
       'https://fieriresearch.vercel.app',
+      'https://fier2.vercel.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -12,7 +17,7 @@ export class EventService {
 
     return {
       success: true,
-      data: events.map(e => ({
+      data: events.map((e) => ({
         id: e.id,
         title: e.title,
         date: e.date,
@@ -83,7 +88,7 @@ export class EventService {
       throw new NotFoundException('Événement non trouvé');
     }
 
-    const participants = event.registrations.map(r => ({
+    const participants = event.registrations.map((r) => ({
       id: r.member.id,
       firstName: r.member.firstname,
       lastName: r.member.lastname,
@@ -101,17 +106,19 @@ export class EventService {
     };
   }
 
-  async createEvent(data: { id: string; title: string; date: string | Date; isLive?: boolean; streamUrl: string }) {
-    const existing = await this.prisma.event.findUnique({
-      where: { id: data.id },
-    });
-    if (existing) {
-      throw new ConflictException('Un événement avec cet identifiant existe déjà');
-    }
+  async createEvent(data: {
+    title: string;
+    date: string | Date;
+    isLive?: boolean;
+    streamUrl?: string;
+  }) {
     const event = await this.prisma.event.create({
       data: {
-        ...data,
+        id: `event-${Date.now()}`,
+        title: data.title,
         date: new Date(data.date),
+        isLive: data.isLive || false,
+        streamUrl: data.streamUrl || '',
       },
     });
     return {
@@ -120,7 +127,15 @@ export class EventService {
     };
   }
 
-  async updateEvent(id: string, data: Partial<{ title: string; date: string | Date; isLive: boolean; streamUrl: string }>) {
+  async updateEvent(
+    id: string,
+    data: Partial<{
+      title: string;
+      date: string | Date;
+      isLive: boolean;
+      streamUrl: string;
+    }>,
+  ) {
     const event = await this.prisma.event.findUnique({
       where: { id },
     });
@@ -183,7 +198,9 @@ export class EventService {
     });
 
     if (!registration) {
-      throw new ForbiddenException('Vous devez être inscrit à cet événement pour accéder au direct.');
+      throw new ForbiddenException(
+        'Vous devez être inscrit à cet événement pour accéder au direct.',
+      );
     }
 
     return {
@@ -192,4 +209,3 @@ export class EventService {
     };
   }
 }
-

@@ -90,7 +90,10 @@ describe('ApplicationService', () => {
 
     it('should create new application if not already applied', async () => {
       mockPrisma.application.findUnique.mockResolvedValue(null);
-      mockPrisma.application.create.mockResolvedValue({ id: 'new-app', status: 'PENDING' });
+      mockPrisma.application.create.mockResolvedValue({
+        id: 'new-app',
+        status: 'PENDING',
+      });
 
       const result = await service.submitApplication(1, {
         opportunityId: 'opp-1',

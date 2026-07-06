@@ -1,17 +1,25 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class OpportunityService {
   constructor(private prisma: PrismaService) {}
 
-  async getOpportunities(query: { type?: string; domain?: string; status?: string }) {
+  async getOpportunities(query: {
+    type?: string;
+    discipline?: string;
+    status?: string;
+  }) {
     const where: any = {};
     if (query.type) {
       where.type = query.type;
     }
-    if (query.domain) {
-      where.discipline = query.domain; // Discipline correspond au domaine scientifique
+    if (query.discipline) {
+      where.discipline = query.discipline;
     }
     if (query.status) {
       where.status = query.status;
@@ -34,7 +42,7 @@ export class OpportunityService {
 
     return {
       success: true,
-      data: opportunities.map(o => ({
+      data: opportunities.map((o) => ({
         id: o.id,
         title: o.title,
         description: o.description,
@@ -93,7 +101,16 @@ export class OpportunityService {
     };
   }
 
-  async createOpportunity(authorId: number, data: { title: string; description: string; type: string; discipline: string; salary?: number }) {
+  async createOpportunity(
+    authorId: number,
+    data: {
+      title: string;
+      description: string;
+      type: string;
+      discipline: string;
+      salary?: number;
+    },
+  ) {
     const o = await this.prisma.opportunity.create({
       data: {
         title: data.title,
@@ -117,7 +134,14 @@ export class OpportunityService {
     id: string,
     memberId: number,
     userRole: string,
-    data: Partial<{ title: string; description: string; type: string; discipline: string; salary: number; status: string }>,
+    data: Partial<{
+      title: string;
+      description: string;
+      type: string;
+      discipline: string;
+      salary: number;
+      status: string;
+    }>,
   ) {
     const o = await this.prisma.opportunity.findUnique({
       where: { id },
@@ -128,7 +152,9 @@ export class OpportunityService {
     }
 
     if (o.authorId !== memberId && userRole !== 'ADMIN') {
-      throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette opportunité.");
+      throw new ForbiddenException(
+        "Vous n'êtes pas autorisé à modifier cette opportunité.",
+      );
     }
 
     const updated = await this.prisma.opportunity.update({
@@ -160,7 +186,9 @@ export class OpportunityService {
     }
 
     if (o.authorId !== memberId && userRole !== 'ADMIN') {
-      throw new ForbiddenException("Vous n'êtes pas autorisé à supprimer cette opportunité.");
+      throw new ForbiddenException(
+        "Vous n'êtes pas autorisé à supprimer cette opportunité.",
+      );
     }
 
     await this.prisma.opportunity.delete({

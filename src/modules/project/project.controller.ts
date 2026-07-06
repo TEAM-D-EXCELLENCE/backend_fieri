@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
@@ -16,9 +27,13 @@ export class ProjectController {
     @Query('clubId') clubId?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     const memberId = req.user ? req.user.id : undefined;
-    return this.projectService.getProjects(memberId, clubId, status, search);
+    const pageNum = page ? parseInt(page, 10) : undefined;
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    return this.projectService.getProjects(memberId, clubId, status, search, pageNum, limitNum);
   }
 
   @Get(':id')
@@ -31,27 +46,49 @@ export class ProjectController {
   @Post()
   async createProject(
     @Request() req,
-    @Body() data: { id: string; title: string; summary: string; description?: string; status?: string; technologies?: string[]; team?: any[]; clubId?: string },
+    @Body()
+    data: {
+      title: string;
+      summary: string;
+      description?: string;
+      status?: string;
+      technologies?: string[];
+      team?: any[];
+      clubId?: string;
+    },
   ) {
     return this.projectService.createProject(req.user.id, data);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('CHERCHEUR', 'ADMIN')
   @Put(':id')
   async updateProject(
     @Request() req,
     @Param('id') id: string,
-    @Body() data: Partial<{ title: string; summary: string; description: string; status: string; technologies: string[]; team: any[]; clubId: string }>,
+    @Body()
+    data: Partial<{
+      title: string;
+      summary: string;
+      description: string;
+      status: string;
+      technologies: string[];
+      team: any[];
+      clubId: string;
+    }>,
   ) {
-    return this.projectService.updateProject(id, req.user.id, req.user.role, data);
+    return this.projectService.updateProject(
+      id,
+      req.user.id,
+      req.user.role,
+      data,
+    );
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('CHERCHEUR', 'ADMIN')
   @Delete(':id')
-  async deleteProject(
-    @Request() req,
-    @Param('id') id: string,
-  ) {
+  async deleteProject(@Request() req, @Param('id') id: string) {
     return this.projectService.deleteProject(id, req.user.id, req.user.role);
   }
 

@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
@@ -22,7 +32,13 @@ export class EventController {
   @Roles('ADMIN')
   @Post()
   async createEvent(
-    @Body() data: { id: string; title: string; date: string; isLive?: boolean; streamUrl: string },
+    @Body()
+    data: {
+      title: string;
+      date: string;
+      isLive?: boolean;
+      streamUrl?: string;
+    },
   ) {
     return this.eventService.createEvent(data);
   }
@@ -32,7 +48,13 @@ export class EventController {
   @Put(':id')
   async updateEvent(
     @Param('id') id: string,
-    @Body() data: Partial<{ title: string; date: string; isLive: boolean; streamUrl: string }>,
+    @Body()
+    data: Partial<{
+      title: string;
+      date: string;
+      isLive: boolean;
+      streamUrl: string;
+    }>,
   ) {
     return this.eventService.updateEvent(id, data);
   }

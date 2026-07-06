@@ -63,7 +63,7 @@ model Member {
   branch       Branch       @relation(fields: [branchId], references: [id])
 
   // Nouveaux champs pour le profil Chercheur
-  role         String       @default("CHERCHEUR") // CHERCHEUR, CHEF_DE_PROJET, MENTOR, RESPONSABLE, ADMIN
+  role         String       @default("ETUDIANT") // ETUDIANT, CHERCHEUR, CHEF_DE_PROJET, MENTOR, RESPONSABLE, ADMIN
   bio          String?
   skills       String[]     @default([])
   avatarUrl    String?
@@ -83,6 +83,8 @@ model Member {
   following           ResearcherFollow[] @relation("follower")
   opportunities       Opportunity[]
   projects            Project[]          @relation("ProjectOwner")
+  authoredPublications Publication[]
+  donations           Contribution[]
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -108,6 +110,7 @@ model Project {
   followers    ProjectFollow[]
   contributions ProjectContribution[]
   tasks        Task[]
+  publications Publication[]
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -141,6 +144,7 @@ model Club {
 
   memberships  ClubMembership[]
   projects     Project[]
+  publications Publication[]
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -303,6 +307,39 @@ model Application {
   updatedAt       DateTime     @updatedAt
 
   @@unique([opportunityId, memberId])
+}
+
+model Publication {
+  id           String       @id @default(uuid())
+  title        String
+  content      String
+  category     String
+  status       String       @default("PUBLISHED") // PUBLISHED, DRAFT, ARCHIVED
+
+  authorId     Int
+  author       Member       @relation(fields: [authorId], references: [id])
+
+  projectId    String?
+  project      Project?     @relation(fields: [projectId], references: [id])
+  clubId       String?
+  club         Club?        @relation(fields: [clubId], references: [id])
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model Contribution {
+  id           String       @id @default(uuid())
+  type         String       // "donation" ou "partnership"
+  amount       Int?         // Montant (pour les dons)
+  organisation String?      // Organisation (pour les partenariats)
+  email        String
+  message      String?
+
+  memberId     Int?
+  member       Member?      @relation(fields: [memberId], references: [id])
+
+  createdAt    DateTime     @default(now())
 }
 
 model ResearcherFollow {

@@ -13,7 +13,7 @@ export class TaskService {
 
     return {
       success: true,
-      data: tasks.map(t => ({
+      data: tasks.map((t) => ({
         id: t.id,
         projectId: t.projectId,
         title: t.title,
@@ -24,7 +24,13 @@ export class TaskService {
     };
   }
 
-  async createTask(data: { projectId: string; title: string; status?: string; priority?: string; assignedTo?: string }) {
+  async createTask(data: {
+    projectId: string;
+    title: string;
+    status?: string;
+    priority?: string;
+    assignedTo?: string;
+  }) {
     // Check if project exists
     const project = await this.prisma.project.findUnique({
       where: { id: data.projectId },

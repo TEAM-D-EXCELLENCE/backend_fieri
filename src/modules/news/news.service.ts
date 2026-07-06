@@ -1,11 +1,21 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class NewsService {
   constructor(private prisma: PrismaService) {}
 
-  async getNews(includePending?: boolean, memberId?: number) {
+  async getNews(
+    includePending?: boolean,
+    memberId?: number,
+    featured?: boolean,
+    page?: number,
+    limit?: number,
+  ) {
     let whereClause: any = { status: 'APPROVED' };
 
     if (includePending && memberId) {
@@ -15,30 +25,69 @@ export class NewsService {
 
       // Seuls les ADMIN et MENTOR (ou modérateurs) peuvent voir les articles en attente
       if (member && (member.role === 'ADMIN' || member.role === 'MENTOR')) {
-        whereClause = {}; // Tout récupérer
+        whereClause = {};
       }
     }
 
-    const newsList = await this.prisma.news.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
-    });
+    if (featured) {
+      whereClause.category = { not: null };
+    }
 
-    return {
+    const skip = page && limit ? (page - 1) * limit : undefined;
+    const take = limit || undefined;
+
+    const [newsList, total] = await Promise.all([
+      this.prisma.news.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        include: {
+          author: {
+            select: { id: true, firstname: true, lastname: true },
+          },
+        },
+      }),
+      this.prisma.news.count({ where: whereClause }),
+    ]);
+
+    const result: any = {
       success: true,
-      data: newsList.map(n => ({
+      data: newsList.map((n) => ({
         id: n.id,
         title: n.title,
         content: n.content,
         status: n.status,
         category: n.category,
+        author: {
+          id: n.author.id,
+          firstName: n.author.firstname,
+          lastName: n.author.lastname,
+        },
+        createdAt: n.createdAt,
       })),
     };
+
+    if (page && limit) {
+      result.pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
+    return result;
   }
 
   async getNewsById(id: string) {
     const news = await this.prisma.news.findUnique({
       where: { id },
+      include: {
+        author: {
+          select: { id: true, firstname: true, lastname: true },
+        },
+      },
     });
 
     if (!news) {
@@ -52,11 +101,21 @@ export class NewsService {
         title: news.title,
         content: news.content,
         status: news.status,
+        category: news.category,
+        author: {
+          id: news.author.id,
+          firstName: news.author.firstname,
+          lastName: news.author.lastname,
+        },
+        createdAt: news.createdAt,
       },
     };
   }
 
-  async createNews(authorId: number, data: { title: string; content: string; category: string }) {
+  async createNews(
+    authorId: number,
+    data: { title: string; content: string; category: string },
+  ) {
     const news = await this.prisma.news.create({
       data: {
         title: data.title,
@@ -126,7 +185,9 @@ export class NewsService {
 
     // L'auteur ou un admin peut supprimer
     if (news.authorId !== memberId && member.role !== 'ADMIN') {
-      throw new ForbiddenException("Vous n'avez pas l'autorisation de supprimer cet article.");
+      throw new ForbiddenException(
+        "Vous n'avez pas l'autorisation de supprimer cet article.",
+      );
     }
 
     await this.prisma.news.delete({
@@ -139,7 +200,12 @@ export class NewsService {
     };
   }
 
-  async updateNews(id: string, memberId: number, role: string, data: Partial<{ title: string; content: string; category: string }>) {
+  async updateNews(
+    id: string,
+    memberId: number,
+    role: string,
+    data: Partial<{ title: string; content: string; category: string }>,
+  ) {
     const news = await this.prisma.news.findUnique({
       where: { id },
     });
@@ -149,7 +215,9 @@ export class NewsService {
     }
 
     if (news.authorId !== memberId && role !== 'ADMIN') {
-      throw new ForbiddenException("Vous n'avez pas l'autorisation de modifier cet article.");
+      throw new ForbiddenException(
+        "Vous n'avez pas l'autorisation de modifier cet article.",
+      );
     }
 
     const updated = await this.prisma.news.update({
@@ -163,4 +231,3 @@ export class NewsService {
     };
   }
 }
-

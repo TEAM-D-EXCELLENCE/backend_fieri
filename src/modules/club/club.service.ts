@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -7,26 +12,45 @@ export class ClubService {
 
   // --- CLUBS ENDPOINTS ---
 
-  async getClubs() {
-    const clubs = await this.prisma.club.findMany({
-      include: {
-        memberships: {
-          where: { status: 'APPROVED' },
-        },
-      },
-    });
+  async getClubs(page?: number, limit?: number) {
+    const skip = page && limit ? (page - 1) * limit : undefined;
+    const take = limit || undefined;
 
-    const formattedClubs = clubs.map(club => ({
+    const [clubs, total] = await Promise.all([
+      this.prisma.club.findMany({
+        skip,
+        take,
+        include: {
+          memberships: {
+            where: { status: 'APPROVED' },
+          },
+        },
+      }),
+      this.prisma.club.count(),
+    ]);
+
+    const formattedClubs = clubs.map((club) => ({
       id: club.id,
       name: club.name,
       discipline: club.discipline,
       memberCount: club.memberships.length,
     }));
 
-    return {
+    const result: any = {
       success: true,
       data: formattedClubs,
     };
+
+    if (page && limit) {
+      result.pagination = {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      };
+    }
+
+    return result;
   }
 
   async getClubById(id: string) {
@@ -46,19 +70,28 @@ export class ClubService {
       throw new NotFoundException('Club non trouvé');
     }
 
-    const members = club.memberships.map(m => ({
+    const members = club.memberships.map((m) => ({
       id: m.member.id,
       firstName: m.member.firstname,
       lastName: m.member.lastname,
+      role: m.member.role,
     }));
+
+    const projects = await this.prisma.project.findMany({
+      where: { clubId: id },
+      select: { id: true, title: true, status: true },
+      orderBy: { createdAt: 'desc' },
+    });
 
     return {
       success: true,
       data: {
         id: club.id,
         name: club.name,
+        discipline: club.discipline,
         description: club.description || '',
         members,
+        projects,
       },
     };
   }
@@ -70,6 +103,19 @@ export class ClubService {
 
     if (!club) {
       throw new NotFoundException('Club non trouvé');
+    }
+
+    const existing = await this.prisma.clubMembership.findUnique({
+      where: {
+        clubId_memberId: {
+          clubId,
+          memberId,
+        },
+      },
+    });
+
+    if (existing && existing.status === 'APPROVED') {
+      throw new ConflictException('Vous êtes déjà membre de ce club.');
     }
 
     // Upsert membership as APPROVED
@@ -197,7 +243,7 @@ export class ClubService {
       },
     });
 
-    const data = requests.map(r => ({
+    const data = requests.map((r) => ({
       id: r.id,
       clubId: r.clubId,
       status: r.status,
@@ -221,7 +267,7 @@ export class ClubService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    const data = requests.map(r => ({
+    const data = requests.map((r) => ({
       id: r.id,
       clubId: r.clubId,
       status: r.status,
@@ -248,7 +294,7 @@ export class ClubService {
       orderBy: { updatedAt: 'desc' },
     });
 
-    const data = requests.map(r => ({
+    const data = requests.map((r) => ({
       id: r.id,
       clubId: r.clubId,
       clubName: r.club.name,
@@ -308,7 +354,7 @@ export class ClubService {
 
     return {
       success: true,
-      message: 'Demande d\'adhésion refusée.',
+      message: "Demande d'adhésion refusée.",
     };
   }
 
@@ -323,7 +369,7 @@ export class ClubService {
     });
 
     if (!membership) {
-      throw new NotFoundException("Adhésion non trouvée");
+      throw new NotFoundException('Adhésion non trouvée');
     }
 
     await this.prisma.clubMembership.delete({
@@ -341,15 +387,16 @@ export class ClubService {
     };
   }
 
-  async createClub(data: { id: string; name: string; discipline: string; description?: string }) {
-    const existing = await this.prisma.club.findUnique({
-      where: { id: data.id },
-    });
-    if (existing) {
-      throw new ConflictException('Un club avec cet identifiant existe déjà');
-    }
+  async createClub(data: {
+    name: string;
+    discipline: string;
+    description?: string;
+  }) {
     const club = await this.prisma.club.create({
-      data,
+      data: {
+        id: `club-${Date.now()}`,
+        ...data,
+      },
     });
     return {
       success: true,
@@ -357,7 +404,10 @@ export class ClubService {
     };
   }
 
-  async updateClub(id: string, data: Partial<{ name: string; discipline: string; description: string }>) {
+  async updateClub(
+    id: string,
+    data: Partial<{ name: string; discipline: string; description: string }>,
+  ) {
     const club = await this.prisma.club.findUnique({
       where: { id },
     });
@@ -373,5 +423,26 @@ export class ClubService {
       data: updated,
     };
   }
-}
 
+  async deleteClub(id: string) {
+    const club = await this.prisma.club.findUnique({
+      where: { id },
+    });
+    if (!club) {
+      throw new NotFoundException('Club non trouvé');
+    }
+    await this.prisma.clubMembership.deleteMany({
+      where: { clubId: id },
+    });
+    await this.prisma.project.deleteMany({
+      where: { clubId: id },
+    });
+    await this.prisma.club.delete({
+      where: { id },
+    });
+    return {
+      success: true,
+      message: 'Club supprimé avec succès.',
+    };
+  }
+}

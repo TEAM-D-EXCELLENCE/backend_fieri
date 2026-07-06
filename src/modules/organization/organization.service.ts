@@ -21,27 +21,27 @@ export class OrganizationService {
 
   async getUniversitiesByCountry(countryId: number) {
     const data = await this.prisma.university.findMany({
-      where: { countryId }
+      where: { countryId },
     });
-    return { success: true, message: "Universités récupérées", data };
+    return { success: true, message: 'Universités récupérées', data };
   }
 
   async getBranchesByUniversity(universityId: number) {
     const data = await this.prisma.branch.findMany({
-      where: { universityId }
+      where: { universityId },
     });
-    return { success: true, message: "Branches récupérées", data };
+    return { success: true, message: 'Branches récupérées', data };
   }
 
   async getBranchById(id: number) {
     const branch = await this.prisma.branch.findUnique({
       where: { id },
-      include: { university: { include: { country: true } } } // Optionnel: récupère aussi l'université et le pays lié
+      include: { university: { include: { country: true } } }, // Optionnel: récupère aussi l'université et le pays lié
     });
     return {
       success: true,
-      message: "Détails de la branche récupérés",
-      data: branch
+      message: 'Détails de la branche récupérés',
+      data: branch,
     };
   }
 
@@ -52,7 +52,7 @@ export class OrganizationService {
     });
     return {
       success: true,
-      message: "Détails du pays récupérés",
+      message: 'Détails du pays récupérés',
       data: country,
     };
   }
@@ -61,7 +61,7 @@ export class OrganizationService {
   async getUniversityById(id: number) {
     const university = await this.prisma.university.findUnique({
       where: { id },
-      include: { country: true } // Inclus le pays pour plus de détails côté front
+      include: { country: true }, // Inclus le pays pour plus de détails côté front
     });
     return {
       success: true,
@@ -70,25 +70,33 @@ export class OrganizationService {
     };
   }
 
-async createCountry(name: string) {
+  async createCountry(name: string) {
     const country = await this.prisma.country.create({
       data: { name },
     });
-    return { success: true, message: "Pays créé avec succès", data: country };
+    return { success: true, message: 'Pays créé avec succès', data: country };
   }
 
   async createUniversity(name: string, countryId: number) {
     const university = await this.prisma.university.create({
       data: { name, countryId },
     });
-    return { success: true, message: "Université créée avec succès", data: university };
+    return {
+      success: true,
+      message: 'Université créée avec succès',
+      data: university,
+    };
   }
 
   async createBranch(name: string, universityId: number) {
     const branch = await this.prisma.branch.create({
       data: { name, universityId },
     });
-    return { success: true, message: "Branche créée avec succès", data: branch };
+    return {
+      success: true,
+      message: 'Branche créée avec succès',
+      data: branch,
+    };
   }
 
   async getUniversities() {

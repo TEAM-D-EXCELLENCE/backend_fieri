@@ -1,7 +1,18 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../../auth/roles.decorator';
+import { RolesGuard } from '../../auth/roles.guard';
 import { OrganizationService } from './organization.service';
 
-@Controller() 
+@Controller()
 export class OrganizationController {
   constructor(private readonly organizationService: OrganizationService) {}
 
@@ -43,23 +54,29 @@ export class OrganizationController {
     return this.organizationService.getUniversityById(id);
   }
 
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
   @Post('countries')
   async createCountry(@Body('name') name: string) {
     return this.organizationService.createCountry(name);
   }
 
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
   @Post('universities')
   async createUniversity(
     @Body('name') name: string,
-    @Body('countryId', ParseIntPipe) countryId: number
+    @Body('countryId', ParseIntPipe) countryId: number,
   ) {
     return this.organizationService.createUniversity(name, countryId);
   }
 
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
   @Post('branches')
   async createBranch(
     @Body('name') name: string,
-    @Body('universityId', ParseIntPipe) universityId: number
+    @Body('universityId', ParseIntPipe) universityId: number,
   ) {
     return this.organizationService.createBranch(name, universityId);
   }

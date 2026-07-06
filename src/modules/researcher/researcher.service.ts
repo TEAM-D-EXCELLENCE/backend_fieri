@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -16,6 +20,8 @@ export class ResearcherService {
       id: m.id,
       firstName: m.firstname,
       lastName: m.lastname,
+      email: m.email,
+      role: m.role,
       bio: m.bio || '',
       skills: m.skills,
       followers: m.followers.length,
@@ -38,10 +44,11 @@ export class ResearcherService {
 
     // Find project IDs where the member is part of the team
     const allProjects = await this.prisma.project.findMany();
-    const researcherName = `${member.firstname} ${member.lastname}`.toLowerCase();
-    
+    const researcherName =
+      `${member.firstname} ${member.lastname}`.toLowerCase();
+
     const projects = allProjects
-      .filter(p => {
+      .filter((p) => {
         try {
           let teamArray: any[] = [];
           if (p.team && typeof p.team === 'string') {
@@ -49,12 +56,14 @@ export class ResearcherService {
           } else if (Array.isArray(p.team)) {
             teamArray = p.team as any[];
           }
-          return teamArray.some(t => t.name && t.name.toLowerCase() === researcherName);
+          return teamArray.some(
+            (t) => t.name && t.name.toLowerCase() === researcherName,
+          );
         } catch (e) {
           return false;
         }
       })
-      .map(p => p.id);
+      .map((p) => p.id);
 
     return {
       success: true,
@@ -66,6 +75,35 @@ export class ResearcherService {
         skills: member.skills,
         projects,
         distinctions: member.distinctions,
+      },
+    };
+  }
+
+  async getResearcherDistinctions(id: number) {
+    const member = await this.prisma.member.findUnique({
+      where: { id },
+    });
+
+    if (!member) {
+      throw new NotFoundException('Chercheur non trouvé');
+    }
+
+    const badges = await this.prisma.badge.findMany({
+      where: { userId: id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      success: true,
+      data: {
+        distinctions: member.distinctions,
+        badges: badges.map((b) => ({
+          id: b.id,
+          badgeType: b.badgeType,
+          userName: b.userName,
+          awardedBy: b.awardedBy,
+          createdAt: b.createdAt,
+        })),
       },
     };
   }
@@ -90,7 +128,10 @@ export class ResearcherService {
     };
   }
 
-  async updateMyResearcherProfile(id: number, data: { bio?: string; skills?: string[]; avatarUrl?: string }) {
+  async updateMyResearcherProfile(
+    id: number,
+    data: { bio?: string; skills?: string[]; avatarUrl?: string },
+  ) {
     const member = await this.prisma.member.findUnique({
       where: { id },
     });
@@ -104,7 +145,8 @@ export class ResearcherService {
       data: {
         bio: data.bio !== undefined ? data.bio : member.bio,
         skills: data.skills !== undefined ? data.skills : member.skills,
-        avatarUrl: data.avatarUrl !== undefined ? data.avatarUrl : member.avatarUrl,
+        avatarUrl:
+          data.avatarUrl !== undefined ? data.avatarUrl : member.avatarUrl,
       },
     });
 
@@ -116,7 +158,9 @@ export class ResearcherService {
 
   async toggleFollowResearcher(followerId: number, followingId: number) {
     if (followerId === followingId) {
-      throw new BadRequestException('Vous ne pouvez pas vous suivre vous-même.');
+      throw new BadRequestException(
+        'Vous ne pouvez pas vous suivre vous-même.',
+      );
     }
 
     const followingMember = await this.prisma.member.findUnique({
@@ -172,7 +216,9 @@ export class ResearcherService {
 
   async unfollowResearcher(followerId: number, followingId: number) {
     if (followerId === followingId) {
-      throw new BadRequestException('Vous ne pouvez pas vous désabonner de vous-même.');
+      throw new BadRequestException(
+        'Vous ne pouvez pas vous désabonner de vous-même.',
+      );
     }
 
     const followingMember = await this.prisma.member.findUnique({
@@ -193,7 +239,7 @@ export class ResearcherService {
     });
 
     if (!existingFollow) {
-      throw new NotFoundException("Vous ne suivez pas ce chercheur.");
+      throw new NotFoundException('Vous ne suivez pas ce chercheur.');
     }
 
     await this.prisma.researcherFollow.delete({
@@ -212,4 +258,3 @@ export class ResearcherService {
     };
   }
 }
-

@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
@@ -6,11 +17,17 @@ import { ClubService } from './club.service';
 
 @Controller('clubs')
 export class ClubController {
-  constructor(private readonly clubService: ClubService) { }
+  constructor(private readonly clubService: ClubService) {}
 
   @Get()
-  async getClubs() {
-    return this.clubService.getClubs();
+  async getClubs(
+    @Query('featured') featured?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = parseInt(page || '1', 10);
+    const limitNum = parseInt(limit || '20', 10);
+    return this.clubService.getClubs(pageNum, limitNum);
   }
 
   @Get(':id')
@@ -22,7 +39,12 @@ export class ClubController {
   @Roles('ADMIN')
   @Post()
   async createClub(
-    @Body() data: { id: string; name: string; discipline: string; description?: string },
+    @Body()
+    data: {
+      name: string;
+      discipline: string;
+      description?: string;
+    },
   ) {
     return this.clubService.createClub(data);
   }
@@ -32,9 +54,17 @@ export class ClubController {
   @Put(':id')
   async updateClub(
     @Param('id') id: string,
-    @Body() data: Partial<{ name: string; discipline: string; description: string }>,
+    @Body()
+    data: Partial<{ name: string; discipline: string; description: string }>,
   ) {
     return this.clubService.updateClub(id, data);
+  }
+
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
+  @Delete(':id')
+  async deleteClub(@Param('id') id: string) {
+    return this.clubService.deleteClub(id);
   }
 
   @UseGuards(AuthGuard('jwt'))

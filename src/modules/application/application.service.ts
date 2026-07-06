@@ -1,11 +1,18 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class ApplicationService {
   constructor(private prisma: PrismaService) {}
 
-  async submitApplication(memberId: number, data: { opportunityId: string; coverLetter: string; cvUrl: string }) {
+  async submitApplication(
+    memberId: number,
+    data: { opportunityId: string; coverLetter: string; cvUrl: string },
+  ) {
     // Check if already applied
     const existing = await this.prisma.application.findUnique({
       where: {
@@ -17,7 +24,9 @@ export class ApplicationService {
     });
 
     if (existing) {
-      throw new ConflictException('Vous avez déjà postulé à cette opportunité.');
+      throw new ConflictException(
+        'Vous avez déjà postulé à cette opportunité.',
+      );
     }
 
     const application = await this.prisma.application.create({
@@ -48,7 +57,7 @@ export class ApplicationService {
 
     return {
       success: true,
-      data: applications.map(a => ({
+      data: applications.map((a) => ({
         id: a.id,
         opportunityId: a.opportunityId,
         coverLetter: a.coverLetter,
@@ -72,10 +81,12 @@ export class ApplicationService {
     return {
       success: true,
       hasApplied: !!application,
-      application: application ? {
-        id: application.id,
-        status: application.status,
-      } : null,
+      application: application
+        ? {
+            id: application.id,
+            status: application.status,
+          }
+        : null,
     };
   }
 
@@ -90,7 +101,7 @@ export class ApplicationService {
 
     return {
       success: true,
-      data: applications.map(a => ({
+      data: applications.map((a) => ({
         id: a.id,
         opportunityId: a.opportunityId,
         status: a.status,

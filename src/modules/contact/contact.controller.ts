@@ -7,7 +7,13 @@ export class ContactController {
 
   @Post()
   async submitMessage(
-    @Body() data: { name: string; email: string; subject: string; message: string },
+    @Body()
+    data: {
+      name: string;
+      email: string;
+      subject: string;
+      message: string;
+    },
   ) {
     return this.contactService.submitContactMessage(data);
   }

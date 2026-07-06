@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -25,6 +29,9 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     // 3. Créer le membre en base de données
+    // 🔒 SÉCURITÉ : le rôle est toujours forcé à ETUDIANT à l'inscription
+    // Le client ne peut PAS s'auto-attribuer un rôle. La promotion se fait
+    // exclusivement via PATCH /members/:id/role par un ADMIN.
     const member = await this.prisma.member.create({
       data: {
         email: data.email,
@@ -32,7 +39,7 @@ export class AuthService {
         firstname: data.firstName,
         lastname: data.lastName,
         branchId: data.branchId,
-        role: data.role || 'CHERCHEUR',
+        role: 'ETUDIANT',
       },
     });
 

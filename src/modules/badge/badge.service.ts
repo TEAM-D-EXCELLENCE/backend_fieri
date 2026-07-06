@@ -13,7 +13,7 @@ export class BadgeService {
 
     return {
       success: true,
-      data: badges.map(b => ({
+      data: badges.map((b) => ({
         id: b.id,
         badgeType: b.badgeType,
         userName: b.userName,
@@ -22,7 +22,12 @@ export class BadgeService {
     };
   }
 
-  async awardBadge(data: { userId: number; userName: string; badgeType: string; awardedBy: string }) {
+  async awardBadge(data: {
+    userId: number;
+    userName: string;
+    badgeType: string;
+    awardedBy: string;
+  }) {
     // Verify user exists
     const user = await this.prisma.member.findUnique({
       where: { id: data.userId },
@@ -91,7 +96,9 @@ export class BadgeService {
       where: { id: badge.userId },
     });
     if (user) {
-      const updatedDistinctions = (user.distinctions || []).filter(d => d !== badge.badgeType);
+      const updatedDistinctions = (user.distinctions || []).filter(
+        (d) => d !== badge.badgeType,
+      );
       await this.prisma.member.update({
         where: { id: badge.userId },
         data: {

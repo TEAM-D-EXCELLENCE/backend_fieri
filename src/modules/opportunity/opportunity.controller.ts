@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
@@ -11,10 +22,14 @@ export class OpportunityController {
   @Get()
   async getOpportunities(
     @Query('type') type?: string,
-    @Query('domain') domain?: string,
+    @Query('discipline') discipline?: string,
     @Query('status') status?: string,
   ) {
-    return this.opportunityService.getOpportunities({ type, domain, status });
+    return this.opportunityService.getOpportunities({
+      type,
+      discipline,
+      status,
+    });
   }
 
   @Get(':id')
@@ -27,27 +42,50 @@ export class OpportunityController {
   @Post()
   async createOpportunity(
     @Request() req,
-    @Body() data: { title: string; description: string; type: string; discipline: string; salary?: number },
+    @Body()
+    data: {
+      title: string;
+      description: string;
+      type: string;
+      discipline: string;
+      salary?: number;
+    },
   ) {
     return this.opportunityService.createOpportunity(req.user.id, data);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('CHERCHEUR', 'ADMIN')
   @Put(':id')
   async updateOpportunity(
     @Request() req,
     @Param('id') id: string,
-    @Body() data: Partial<{ title: string; description: string; type: string; discipline: string; salary: number; status: string }>,
+    @Body()
+    data: Partial<{
+      title: string;
+      description: string;
+      type: string;
+      discipline: string;
+      salary: number;
+      status: string;
+    }>,
   ) {
-    return this.opportunityService.updateOpportunity(id, req.user.id, req.user.role, data);
+    return this.opportunityService.updateOpportunity(
+      id,
+      req.user.id,
+      req.user.role,
+      data,
+    );
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('CHERCHEUR', 'ADMIN')
   @Delete(':id')
-  async deleteOpportunity(
-    @Request() req,
-    @Param('id') id: string,
-  ) {
-    return this.opportunityService.deleteOpportunity(id, req.user.id, req.user.role);
+  async deleteOpportunity(@Request() req, @Param('id') id: string) {
+    return this.opportunityService.deleteOpportunity(
+      id,
+      req.user.id,
+      req.user.role,
+    );
   }
 }
