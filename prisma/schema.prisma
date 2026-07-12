@@ -85,6 +85,7 @@ model Member {
   projects            Project[]          @relation("ProjectOwner")
   authoredPublications Publication[]
   donations           Contribution[]
+  responsibleOfClubs  Club[]             @relation("ClubResponsible")
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -141,6 +142,12 @@ model Club {
   name         String
   discipline   String
   description  String?
+
+  // Responsable du pôle (chef de club). Nullable : un club peut ne pas encore
+  // avoir de responsable. L'autorisation de gestion (adhésions, édition du club)
+  // est scopée à ce membre — ou à un ADMIN.
+  responsibleId Int?
+  responsible   Member?      @relation("ClubResponsible", fields: [responsibleId], references: [id])
 
   memberships  ClubMembership[]
   projects     Project[]

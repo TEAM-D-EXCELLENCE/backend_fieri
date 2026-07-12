@@ -10,6 +10,31 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class ClubService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Autorise la gestion d'un club (adhésions, édition) UNIQUEMENT au responsable
+   * dudit club, ou à un ADMIN. Lève ForbiddenException sinon. Le RolesGuard filtre
+   * déjà en amont sur le rôle global (RESPONSABLE/ADMIN) ; ce contrôle ajoute la
+   * granularité « par club » qui manquait.
+   */
+  private async assertCanManageClub(
+    clubId: string,
+    requester: { id: number; role: string },
+  ) {
+    if (requester?.role === 'ADMIN') return;
+    const club = await this.prisma.club.findUnique({
+      where: { id: clubId },
+      select: { id: true, responsibleId: true },
+    });
+    if (!club) {
+      throw new NotFoundException('Club non trouvé');
+    }
+    if (!requester || club.responsibleId !== requester.id) {
+      throw new ForbiddenException(
+        "Vous n'êtes pas le responsable de ce club.",
+      );
+    }
+  }
+
   // --- CLUBS ENDPOINTS ---
 
   async getClubs(page?: number, limit?: number) {
@@ -24,6 +49,7 @@ export class ClubService {
           memberships: {
             where: { status: 'APPROVED' },
           },
+          responsible: { select: { id: true, firstname: true, lastname: true } },
         },
       }),
       this.prisma.club.count(),
@@ -34,6 +60,14 @@ export class ClubService {
       name: club.name,
       discipline: club.discipline,
       memberCount: club.memberships.length,
+      responsibleId: club.responsibleId,
+      responsible: club.responsible
+        ? {
+            id: club.responsible.id,
+            firstName: club.responsible.firstname,
+            lastName: club.responsible.lastname,
+          }
+        : null,
     }));
 
     const result: any = {
@@ -63,6 +97,7 @@ export class ClubService {
             member: true,
           },
         },
+        responsible: { select: { id: true, firstname: true, lastname: true } },
       },
     });
 
@@ -90,6 +125,14 @@ export class ClubService {
         name: club.name,
         discipline: club.discipline,
         description: club.description || '',
+        responsibleId: club.responsibleId,
+        responsible: club.responsible
+          ? {
+              id: club.responsible.id,
+              firstName: club.responsible.firstname,
+              lastName: club.responsible.lastname,
+            }
+          : null,
         members,
         projects,
       },
@@ -232,7 +275,11 @@ export class ClubService {
     };
   }
 
-  async getPendingRequestsForClub(clubId: string) {
+  async getPendingRequestsForClub(
+    clubId: string,
+    requester: { id: number; role: string },
+  ) {
+    await this.assertCanManageClub(clubId, requester);
     const requests = await this.prisma.clubMembership.findMany({
       where: {
         clubId,
@@ -260,7 +307,11 @@ export class ClubService {
     };
   }
 
-  async getClubHistory(clubId: string) {
+  async getClubHistory(
+    clubId: string,
+    requester: { id: number; role: string },
+  ) {
+    await this.assertCanManageClub(clubId, requester);
     const requests = await this.prisma.clubMembership.findMany({
       where: { clubId },
       include: { member: true },
@@ -309,7 +360,10 @@ export class ClubService {
     };
   }
 
-  async approveRequest(requestId: string) {
+  async approveRequest(
+    requestId: string,
+    requester: { id: number; role: string },
+  ) {
     const request = await this.prisma.clubMembership.findUnique({
       where: { id: requestId },
     });
@@ -317,6 +371,8 @@ export class ClubService {
     if (!request) {
       throw new NotFoundException("Demande d'adhésion non trouvée");
     }
+
+    await this.assertCanManageClub(request.clubId, requester);
 
     await this.prisma.clubMembership.update({
       where: { id: requestId },
@@ -338,7 +394,10 @@ export class ClubService {
     };
   }
 
-  async rejectRequest(requestId: string) {
+  async rejectRequest(
+    requestId: string,
+    requester: { id: number; role: string },
+  ) {
     const request = await this.prisma.clubMembership.findUnique({
       where: { id: requestId },
     });
@@ -346,6 +405,8 @@ export class ClubService {
     if (!request) {
       throw new NotFoundException("Demande d'adhésion non trouvée");
     }
+
+    await this.assertCanManageClub(request.clubId, requester);
 
     await this.prisma.clubMembership.update({
       where: { id: requestId },
@@ -358,7 +419,12 @@ export class ClubService {
     };
   }
 
-  async removeUserMembership(clubId: string, userId: number) {
+  async removeUserMembership(
+    clubId: string,
+    userId: number,
+    requester: { id: number; role: string },
+  ) {
+    await this.assertCanManageClub(clubId, requester);
     const membership = await this.prisma.clubMembership.findUnique({
       where: {
         clubId_memberId: {
@@ -407,6 +473,7 @@ export class ClubService {
   async updateClub(
     id: string,
     data: Partial<{ name: string; discipline: string; description: string }>,
+    requester: { id: number; role: string },
   ) {
     const club = await this.prisma.club.findUnique({
       where: { id },
@@ -414,6 +481,7 @@ export class ClubService {
     if (!club) {
       throw new NotFoundException('Club non trouvé');
     }
+    await this.assertCanManageClub(id, requester);
     const updated = await this.prisma.club.update({
       where: { id },
       data,

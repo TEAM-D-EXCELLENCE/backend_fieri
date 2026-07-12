@@ -34,15 +34,15 @@ export class MembershipController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('RESPONSABLE', 'ADMIN')
   @Get('requests/pending/:clubId')
-  async getPendingRequests(@Param('clubId') clubId: string) {
-    return this.clubService.getPendingRequestsForClub(clubId);
+  async getPendingRequests(@Param('clubId') clubId: string, @Request() req) {
+    return this.clubService.getPendingRequestsForClub(clubId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('RESPONSABLE', 'ADMIN')
   @Get('requests/club/:clubId')
-  async getClubHistory(@Param('clubId') clubId: string) {
-    return this.clubService.getClubHistory(clubId);
+  async getClubHistory(@Param('clubId') clubId: string, @Request() req) {
+    return this.clubService.getClubHistory(clubId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -60,15 +60,15 @@ export class MembershipController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('RESPONSABLE', 'ADMIN')
   @Patch('requests/:requestId/approve')
-  async approveRequest(@Param('requestId') requestId: string) {
-    return this.clubService.approveRequest(requestId);
+  async approveRequest(@Param('requestId') requestId: string, @Request() req) {
+    return this.clubService.approveRequest(requestId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('RESPONSABLE', 'ADMIN')
   @Patch('requests/:requestId/reject')
-  async rejectRequest(@Param('requestId') requestId: string) {
-    return this.clubService.rejectRequest(requestId);
+  async rejectRequest(@Param('requestId') requestId: string, @Request() req) {
+    return this.clubService.rejectRequest(requestId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -77,7 +77,8 @@ export class MembershipController {
   async removeMembership(
     @Param('clubId') clubId: string,
     @Param('userId', ParseIntPipe) userId: number,
+    @Request() req,
   ) {
-    return this.clubService.removeUserMembership(clubId, userId);
+    return this.clubService.removeUserMembership(clubId, userId, req.user);
   }
 }

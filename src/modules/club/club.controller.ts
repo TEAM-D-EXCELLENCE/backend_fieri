@@ -56,8 +56,9 @@ export class ClubController {
     @Param('id') id: string,
     @Body()
     data: Partial<{ name: string; discipline: string; description: string }>,
+    @Request() req,
   ) {
-    return this.clubService.updateClub(id, data);
+    return this.clubService.updateClub(id, data, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
