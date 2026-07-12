@@ -19,6 +19,10 @@ import { ApplicationModule } from './modules/application/application.module';
 import { OpportunityModule } from './modules/opportunity/opportunity.module';
 import { PublicationModule } from './modules/publication/publication.module';
 import { ContributionModule } from './modules/contribution/contribution.module';
+import { CommonModule } from './common/common.module';
+import { TreasuryModule } from './modules/treasury/treasury.module';
+import { SupportModule } from './modules/support/support.module';
+import { CertificateModule } from './modules/certificate/certificate.module';
 
 @Module({
   imports: [
@@ -40,6 +44,10 @@ import { ContributionModule } from './modules/contribution/contribution.module';
     OpportunityModule,
     PublicationModule,
     ContributionModule,
+    CommonModule,
+    TreasuryModule,
+    SupportModule,
+    CertificateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

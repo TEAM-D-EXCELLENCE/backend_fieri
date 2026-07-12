@@ -15,6 +15,7 @@ model Country {
   name          String       @unique
 
   universities  University[]
+  countryPosts  CountryPost[]
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -28,6 +29,13 @@ model University {
   country     Country    @relation(fields: [countryId], references: [id])
 
   branches    Branch[]
+
+  // Gouvernance & finances (Community OS)
+  posts               UniversityPost[]
+  treasuryAccount     TreasuryAccount?
+  treasuryTransactions TreasuryTransaction[]
+  supportOffers       SupportOffer[]
+  socialAccounts      SocialAccount[]
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -69,6 +77,15 @@ model Member {
   avatarUrl    String?
   distinctions String[]     @default([])
 
+  // Gouvernance : membre emblématique & flux d'exclusion contrôlée
+  isEmblematic        Boolean  @default(false)
+  deletionRequested   Boolean  @default(false)
+  deletionReason      String?
+  deletionRequestedBy Int?     // ID du membre initiateur (ex: responsable club)
+
+  // Signature manuscrite détourée (PNG) — Chef Universitaire, pour les attestations
+  signatureUrl        String?
+
   // Relations
   starredProjects     ProjectFollow[]
   contributions       ProjectContribution[]
@@ -86,6 +103,14 @@ model Member {
   authoredPublications Publication[]
   donations           Contribution[]
   responsibleOfClubs  Club[]             @relation("ClubResponsible")
+
+  // Gouvernance & attestations (Community OS)
+  countryPost          CountryPost?
+  universityPost       UniversityPost?
+  certificatesReceived Certificate[]         @relation("CertificateRecipient")
+  certificatesIssued   Certificate[]         @relation("CertificateIssuer")
+  recordedTransactions TreasuryTransaction[] @relation("TransactionRecorder")
+  supportOffers        SupportOffer[]
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -356,4 +381,123 @@ model ResearcherFollow {
   following    Member       @relation("following", fields: [followingId], references: [id])
 
   @@id([followerId, followingId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Gouvernance : postes scopés (Community OS)
+// ─────────────────────────────────────────────────────────────
+
+model CountryPost {
+  id        String   @id @default(uuid())
+  countryId Int
+  country   Country  @relation(fields: [countryId], references: [id])
+  memberId  Int      @unique
+  member    Member   @relation(fields: [memberId], references: [id])
+  post      String   // "GOUVERNANT_PAYS"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UniversityPost {
+  id           String     @id @default(uuid())
+  universityId Int
+  university   University @relation(fields: [universityId], references: [id])
+  memberId     Int        @unique
+  member       Member     @relation(fields: [memberId], references: [id])
+  post         String     // "CHEF_UNIVERSITAIRE" | "SECRETAIRE" | "TRESORIER" | "RESP_COMMUNICATION"
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// Attestations officielles signées (Chef Universitaire)
+// ─────────────────────────────────────────────────────────────
+
+model Certificate {
+  id          String   @id @default(uuid())
+  recipientId Int
+  recipient   Member   @relation("CertificateRecipient", fields: [recipientId], references: [id])
+  issuerId    Int
+  issuer      Member   @relation("CertificateIssuer", fields: [issuerId], references: [id])
+  title       String
+  category    String   // "FORMATION" | "MANDAT" | "PROJET"
+  fileUrl     String   // Lien vers le PDF généré
+
+  createdAt   DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// Trésorerie universitaire & soutiens
+// ─────────────────────────────────────────────────────────────
+
+model TreasuryAccount {
+  id           String     @id @default(uuid())
+  universityId Int        @unique
+  university   University  @relation(fields: [universityId], references: [id])
+  balance      Int        @default(0) // Montant en monnaie locale (ex: FCFA)
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model TreasuryTransaction {
+  id           String     @id @default(uuid())
+  universityId Int
+  university   University  @relation(fields: [universityId], references: [id])
+  type         String     // "COTISATION" | "DON" | "SUBVENTION" | "DEPENSE"
+  amount       Int        // Positif pour les recettes, négatif pour les dépenses
+  label        String
+  // Nullable : les dons encaissés via webwook (passerelle de paiement) ne sont
+  // enregistrés par aucun membre humain.
+  recordedById Int?
+  recordedBy   Member?    @relation("TransactionRecorder", fields: [recordedById], references: [id])
+
+  createdAt    DateTime   @default(now())
+}
+
+model SupportOffer {
+  id                String   @id @default(uuid())
+  donorName         String
+  donorEmail        String
+  type              String   // "FINANCIAL" | "PHYSICAL"
+  financialPlatform String?  // ex: "GENIUS_PAY"
+  physicalType      String?  // "MATERIEL" | "LOCAUX" | "LOGISTIQUE" | "AUTRE"
+  amount            Int?     // Si financier
+  description       String
+  signatureDocUrl   String?  // Document de reçu signé (PDF stocké)
+  fingerprintHash   String?  // Hash sécurisé de validation de l'empreinte/signature
+  status            String   @default("PENDING") // "PENDING" | "VALIDATED" | "REJECTED"
+
+  // Université bénéficiaire (crédit de la trésorerie) & initiateur éventuel
+  universityId      Int?
+  university        University? @relation(fields: [universityId], references: [id])
+  memberId          Int?
+  member            Member?     @relation(fields: [memberId], references: [id])
+
+  // Référence de session du processeur de paiement (idempotence du webhook)
+  paymentReference  String?  @unique
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// Réseaux sociaux : tokens OAuth chiffrés (Chef de Communication)
+// ─────────────────────────────────────────────────────────────
+
+model SocialAccount {
+  id           String     @id @default(uuid())
+  universityId Int
+  university   University  @relation(fields: [universityId], references: [id])
+  platform     String     // "YOUTUBE" | "LINKEDIN" | "META"
+  accessToken  String     // Chiffré (AES-256-GCM)
+  refreshToken String?    // Chiffré (AES-256-GCM)
+  expiresAt    DateTime?
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([universityId, platform])
 }
