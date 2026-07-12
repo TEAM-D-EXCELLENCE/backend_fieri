@@ -15,7 +15,7 @@ import { OptionalJwtAuthGuard } from './optional-jwt-auth.guard';
     // C'est ici que la magie opère
     JwtModule.register({
       global: true, // Rend le module accessible partout sans le réimporter
-      secret: 'MA_CLE_SUPER_SECRETE_123', // Change ceci par une phrase complexe
+      secret: process.env.JWT_SECRET, // Défini dans .env (local) et dans Vercel (prod)
       signOptions: { expiresIn: '24h' }, // Le token expirera après un jour
     }),
   ],
