@@ -225,113 +225,82 @@ export class ProjectService {
     };
   }
 
-  async toggleFollowProject(id: string, memberId: number) {
-    const project = await this.prisma.project.findUnique({
-      where: { id },
-    });
-
+  /**
+   * Suivi d'un projet (idempotent). Le compteur `stars` est RECALCULÉ à partir
+   * du nombre réel d'abonnés dans la même transaction : suivre deux fois
+   * n'incrémente jamais deux fois, et le compteur ne peut pas dériver.
+   */
+  async followProject(id: string, memberId: number) {
+    const project = await this.prisma.project.findUnique({ where: { id } });
     if (!project) {
       throw new NotFoundException('Projet non trouvé');
     }
-
     const existingFollow = await this.prisma.projectFollow.findUnique({
-      where: {
-        memberId_projectId: {
-          memberId,
-          projectId: id,
-        },
-      },
+      where: { memberId_projectId: { memberId, projectId: id } },
     });
-
-    let starred = false;
-    let message = '';
-
     if (existingFollow) {
-      // Unfollow
-      await this.prisma.projectFollow.delete({
-        where: {
-          memberId_projectId: {
-            memberId,
-            projectId: id,
-          },
-        },
-      });
-
-      await this.prisma.project.update({
-        where: { id },
-        data: { stars: { decrement: 1 } },
-      });
-
-      starred = false;
-      message = 'Projet retiré des favoris.';
-    } else {
-      // Follow
-      await this.prisma.projectFollow.create({
-        data: {
-          memberId,
-          projectId: id,
-        },
-      });
-
-      await this.prisma.project.update({
-        where: { id },
-        data: { stars: { increment: 1 } },
-      });
-
-      starred = true;
-      message = 'Projet ajouté aux favoris.';
+      return {
+        success: true,
+        starred: true,
+        stars: project.stars,
+        message: 'Vous suivez déjà ce projet.',
+      };
     }
-
+    const stars = await this.prisma.$transaction(async (tx) => {
+      await tx.projectFollow.create({ data: { memberId, projectId: id } });
+      const count = await tx.projectFollow.count({ where: { projectId: id } });
+      await tx.project.update({ where: { id }, data: { stars: count } });
+      return count;
+    });
     return {
       success: true,
-      starred,
-      message,
+      starred: true,
+      stars,
+      message: 'Projet ajouté aux favoris.',
     };
   }
 
+  /** Désabonnement d'un projet (idempotent, compteur recalculé, jamais négatif). */
   async unfollowProject(id: string, memberId: number) {
-    const project = await this.prisma.project.findUnique({
-      where: { id },
-    });
-
+    const project = await this.prisma.project.findUnique({ where: { id } });
     if (!project) {
       throw new NotFoundException('Projet non trouvé');
     }
-
     const existingFollow = await this.prisma.projectFollow.findUnique({
-      where: {
-        memberId_projectId: {
-          memberId,
-          projectId: id,
-        },
-      },
+      where: { memberId_projectId: { memberId, projectId: id } },
     });
-
     if (!existingFollow) {
       return {
         success: true,
+        starred: false,
+        stars: project.stars,
         message: 'Vous ne suivez pas ce projet.',
       };
     }
-
-    await this.prisma.projectFollow.delete({
-      where: {
-        memberId_projectId: {
-          memberId,
-          projectId: id,
-        },
-      },
+    const stars = await this.prisma.$transaction(async (tx) => {
+      await tx.projectFollow.delete({
+        where: { memberId_projectId: { memberId, projectId: id } },
+      });
+      const count = await tx.projectFollow.count({ where: { projectId: id } });
+      await tx.project.update({ where: { id }, data: { stars: count } });
+      return count;
     });
-
-    await this.prisma.project.update({
-      where: { id },
-      data: { stars: { decrement: 1 } },
-    });
-
     return {
       success: true,
+      starred: false,
+      stars,
       message: 'Désabonnement réussi.',
     };
+  }
+
+  /** Bascule suivi/non-suivi ; délègue aux méthodes idempotentes ci-dessus. */
+  async toggleFollowProject(id: string, memberId: number) {
+    const existingFollow = await this.prisma.projectFollow.findUnique({
+      where: { memberId_projectId: { memberId, projectId: id } },
+    });
+    return existingFollow
+      ? this.unfollowProject(id, memberId)
+      : this.followProject(id, memberId);
   }
 
   async supportProject(

@@ -15,6 +15,7 @@ model Country {
   name          String       @unique
 
   universities  University[]
+  countryPosts  CountryPost[]
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -28,6 +29,17 @@ model University {
   country     Country    @relation(fields: [countryId], references: [id])
 
   branches    Branch[]
+
+  // Gouvernance & finances (Community OS)
+  posts               UniversityPost[]
+  treasuryAccount     TreasuryAccount?
+  treasuryTransactions TreasuryTransaction[]
+  supportOffers       SupportOffer[]
+  socialAccounts      SocialAccount[]
+  censuses            MembershipCensus[]
+  events              Event[]
+  hackathons          Hackathon[]
+  activityReports     ActivityReport[]
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -69,6 +81,15 @@ model Member {
   avatarUrl    String?
   distinctions String[]     @default([])
 
+  // Gouvernance : membre emblématique & flux d'exclusion contrôlée
+  isEmblematic        Boolean  @default(false)
+  deletionRequested   Boolean  @default(false)
+  deletionReason      String?
+  deletionRequestedBy Int?     // ID du membre initiateur (ex: responsable club)
+
+  // Signature manuscrite détourée (PNG) — Chef Universitaire, pour les attestations
+  signatureUrl        String?
+
   // Relations
   starredProjects     ProjectFollow[]
   contributions       ProjectContribution[]
@@ -86,6 +107,26 @@ model Member {
   authoredPublications Publication[]
   donations           Contribution[]
   responsibleOfClubs  Club[]             @relation("ClubResponsible")
+
+  // Gouvernance & attestations (Community OS)
+  countryPost          CountryPost?
+  universityPost       UniversityPost?
+  certificatesReceived Certificate[]         @relation("CertificateRecipient")
+  certificatesIssued   Certificate[]         @relation("CertificateIssuer")
+  recordedTransactions TreasuryTransaction[] @relation("TransactionRecorder")
+  supportOffers        SupportOffer[]
+
+  // Espace club (Cité) : activités assignées & recensements
+  assignedActivities   AssignedActivity[]
+  submittedCensuses    MembershipCensus[]    @relation("CensusSubmitter")
+  validatedCensuses    MembershipCensus[]    @relation("CensusValidator")
+  organizedEvents      Event[]               @relation("EventOrganizer")
+
+  // Challenges & hackathons (Module 3)
+  createdChallenges    Challenge[]           @relation("ChallengeCreator")
+  challengeSubmissions ChallengeSubmission[]
+  createdHackathons    Hackathon[]           @relation("HackathonCreator")
+  activityReports      ActivityReport[]      @relation("ReportAuthor")
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -152,6 +193,12 @@ model Club {
   memberships  ClubMembership[]
   projects     Project[]
   publications Publication[]
+  assignedActivities AssignedActivity[]
+  censuses     MembershipCensus[]
+  events       Event[]
+  challenges   Challenge[]
+  hackathons   Hackathon[]
+  activityReports ActivityReport[]
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -164,6 +211,12 @@ model ClubMembership {
   memberId     Int
   member       Member       @relation(fields: [memberId], references: [id])
   status       String       @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  // Espace club : rôle interne, entretien d'admission, carte de membre
+  role            String    @default("MEMBRE") // "MEMBRE" | "RESPONSABLE"
+  interviewAt     DateTime?
+  interviewNote   String?
+  cardGeneratedAt DateTime?
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -204,6 +257,19 @@ model Event {
   isLive          Boolean      @default(false)
   streamUrl       String
 
+  // Extensions communautaires (Module 2)
+  description     String       @default("")
+  endDate         DateTime?
+  isPublished     Boolean      @default(false)
+  socialShared    Boolean      @default(false)
+
+  clubId          String?
+  club            Club?        @relation(fields: [clubId], references: [id])
+  universityId    Int?
+  university      University?  @relation(fields: [universityId], references: [id])
+  organizerId     Int?
+  organizer       Member?      @relation("EventOrganizer", fields: [organizerId], references: [id])
+
   registrations   EventRegistration[]
 
   createdAt       DateTime     @default(now())
@@ -216,6 +282,9 @@ model EventRegistration {
   event           Event        @relation(fields: [eventId], references: [id])
   memberId        Int
   member          Member       @relation(fields: [memberId], references: [id])
+
+  // Présence effective renseignée par l'organisateur en fin d'événement
+  attended        Boolean      @default(false)
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
@@ -356,4 +425,238 @@ model ResearcherFollow {
   following    Member       @relation("following", fields: [followingId], references: [id])
 
   @@id([followerId, followingId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Gouvernance : postes scopés (Community OS)
+// ─────────────────────────────────────────────────────────────
+
+model CountryPost {
+  id        String   @id @default(uuid())
+  countryId Int
+  country   Country  @relation(fields: [countryId], references: [id])
+  memberId  Int      @unique
+  member    Member   @relation(fields: [memberId], references: [id])
+  post      String   // "GOUVERNANT_PAYS"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UniversityPost {
+  id           String     @id @default(uuid())
+  universityId Int
+  university   University @relation(fields: [universityId], references: [id])
+  memberId     Int        @unique
+  member       Member     @relation(fields: [memberId], references: [id])
+  post         String     // "CHEF_UNIVERSITAIRE" | "SECRETAIRE" | "TRESORIER" | "RESP_COMMUNICATION"
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// Attestations officielles signées (Chef Universitaire)
+// ─────────────────────────────────────────────────────────────
+
+model Certificate {
+  id          String   @id @default(uuid())
+  recipientId Int
+  recipient   Member   @relation("CertificateRecipient", fields: [recipientId], references: [id])
+  issuerId    Int
+  issuer      Member   @relation("CertificateIssuer", fields: [issuerId], references: [id])
+  title       String
+  category    String   // "FORMATION" | "MANDAT" | "PROJET"
+  fileUrl     String   // Lien vers le PDF généré
+
+  createdAt   DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// Trésorerie universitaire & soutiens
+// ─────────────────────────────────────────────────────────────
+
+model TreasuryAccount {
+  id           String     @id @default(uuid())
+  universityId Int        @unique
+  university   University  @relation(fields: [universityId], references: [id])
+  balance      Int        @default(0) // Montant en monnaie locale (ex: FCFA)
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model TreasuryTransaction {
+  id           String     @id @default(uuid())
+  universityId Int
+  university   University  @relation(fields: [universityId], references: [id])
+  type         String     // "COTISATION" | "DON" | "SUBVENTION" | "DEPENSE"
+  amount       Int        // Positif pour les recettes, négatif pour les dépenses
+  label        String
+  // Nullable : les dons encaissés via webwook (passerelle de paiement) ne sont
+  // enregistrés par aucun membre humain.
+  recordedById Int?
+  recordedBy   Member?    @relation("TransactionRecorder", fields: [recordedById], references: [id])
+
+  createdAt    DateTime   @default(now())
+}
+
+model SupportOffer {
+  id                String   @id @default(uuid())
+  donorName         String
+  donorEmail        String
+  type              String   // "FINANCIAL" | "PHYSICAL"
+  financialPlatform String?  // ex: "GENIUS_PAY"
+  physicalType      String?  // "MATERIEL" | "LOCAUX" | "LOGISTIQUE" | "AUTRE"
+  amount            Int?     // Si financier
+  description       String
+  signatureDocUrl   String?  // Document de reçu signé (PDF stocké)
+  fingerprintHash   String?  // Hash sécurisé de validation de l'empreinte/signature
+  status            String   @default("PENDING") // "PENDING" | "VALIDATED" | "REJECTED"
+
+  // Université bénéficiaire (crédit de la trésorerie) & initiateur éventuel
+  universityId      Int?
+  university        University? @relation(fields: [universityId], references: [id])
+  memberId          Int?
+  member            Member?     @relation(fields: [memberId], references: [id])
+
+  // Référence de session du processeur de paiement (idempotence du webhook)
+  paymentReference  String?  @unique
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────
+// Réseaux sociaux : tokens OAuth chiffrés (Chef de Communication)
+// ─────────────────────────────────────────────────────────────
+
+model SocialAccount {
+  id           String     @id @default(uuid())
+  universityId Int
+  university   University  @relation(fields: [universityId], references: [id])
+  platform     String     // "YOUTUBE" | "LINKEDIN" | "META"
+  accessToken  String     // Chiffré (AES-256-GCM)
+  refreshToken String?    // Chiffré (AES-256-GCM)
+  expiresAt    DateTime?
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([universityId, platform])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Espace club (Cité) : activités assignées & recensement mensuel
+// ─────────────────────────────────────────────────────────────
+
+model AssignedActivity {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  memberId    Int
+  member      Member    @relation(fields: [memberId], references: [id])
+  clubId      String
+  club        Club      @relation(fields: [clubId], references: [id])
+  status      String    @default("TODO") // "TODO" | "IN_PROGRESS" | "DONE"
+  dueDate     DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model MembershipCensus {
+  id            String     @id @default(uuid())
+  clubId        String
+  club          Club       @relation(fields: [clubId], references: [id])
+  universityId  Int
+  university    University  @relation(fields: [universityId], references: [id])
+  submittedById Int
+  submittedBy   Member     @relation("CensusSubmitter", fields: [submittedById], references: [id])
+  memberCount   Int
+  // Liste figée des membres actifs au moment de la soumission : [{ id, name, email }]
+  snapshot      Json       @default("[]")
+  status        String     @default("SUBMITTED") // "SUBMITTED" | "VALIDATED"
+  validatedById Int?
+  validatedBy   Member?    @relation("CensusValidator", fields: [validatedById], references: [id])
+  validatedAt   DateTime?
+
+  createdAt     DateTime   @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// Challenges & Hackathons (Module 3)
+// ─────────────────────────────────────────────────────────────
+
+model Challenge {
+  id              String   @id @default(uuid())
+  title           String
+  description     String
+  rules           String
+  rewardBadgeType String?  // type de badge attribué au(x) gagnant(s)
+  dueDate         DateTime
+  status          String   @default("OPEN") // "OPEN" | "CLOSED"
+
+  clubId          String
+  club            Club     @relation(fields: [clubId], references: [id])
+  createdById     Int
+  createdBy       Member   @relation("ChallengeCreator", fields: [createdById], references: [id])
+
+  submissions     ChallengeSubmission[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ChallengeSubmission {
+  id           String    @id @default(uuid())
+  challengeId  String
+  challenge    Challenge @relation(fields: [challengeId], references: [id])
+  memberId     Int
+  member       Member    @relation(fields: [memberId], references: [id])
+  fileUrl      String    // lien vers le rendu (PDF, dépôt GitHub…)
+  grade        Int?      // note attribuée par le jury
+  feedback     String?   // commentaire du jury
+  isWinner     Boolean   @default(false)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([challengeId, memberId])
+}
+
+model Hackathon {
+  id           String     @id @default(uuid())
+  title        String
+  description  String
+  theme        String?
+  startDate    DateTime
+  endDate      DateTime
+  status       String     @default("PLANNED") // "PLANNED" | "ONGOING" | "DONE"
+
+  clubId       String     // affecté à un club (Cité)
+  club         Club       @relation(fields: [clubId], references: [id])
+  universityId Int
+  university   University  @relation(fields: [universityId], references: [id])
+  createdById  Int
+  createdBy    Member     @relation("HackathonCreator", fields: [createdById], references: [id])
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+// Rapport mensuel d'activité & de recherche (Responsable de Club -> Secrétaire)
+model ActivityReport {
+  id           String     @id @default(uuid())
+  clubId       String
+  club         Club       @relation(fields: [clubId], references: [id])
+  universityId Int
+  university   University  @relation(fields: [universityId], references: [id])
+  authorId     Int
+  author       Member     @relation("ReportAuthor", fields: [authorId], references: [id])
+  period       String     // ex: "2026-07" (mois concerné)
+  title        String
+  content      String     // narratif des activités et travaux de recherche
+
+  createdAt    DateTime   @default(now())
 }
