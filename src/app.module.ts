@@ -25,6 +25,7 @@ import { SupportModule } from './modules/support/support.module';
 import { CertificateModule } from './modules/certificate/certificate.module';
 import { GovernanceModule } from './modules/governance/governance.module';
 import { ClubSpaceModule } from './modules/club-space/club-space.module';
+import { CompetitionModule } from './modules/competition/competition.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ClubSpaceModule } from './modules/club-space/club-space.module';
     CertificateModule,
     GovernanceModule,
     ClubSpaceModule,
+    CompetitionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

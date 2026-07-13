@@ -38,6 +38,7 @@ model University {
   socialAccounts      SocialAccount[]
   censuses            MembershipCensus[]
   events              Event[]
+  hackathons          Hackathon[]
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -120,6 +121,11 @@ model Member {
   validatedCensuses    MembershipCensus[]    @relation("CensusValidator")
   organizedEvents      Event[]               @relation("EventOrganizer")
 
+  // Challenges & hackathons (Module 3)
+  createdChallenges    Challenge[]           @relation("ChallengeCreator")
+  challengeSubmissions ChallengeSubmission[]
+  createdHackathons    Hackathon[]           @relation("HackathonCreator")
+
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -188,6 +194,8 @@ model Club {
   assignedActivities AssignedActivity[]
   censuses     MembershipCensus[]
   events       Event[]
+  challenges   Challenge[]
+  hackathons   Hackathon[]
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -571,4 +579,65 @@ model MembershipCensus {
   validatedAt   DateTime?
 
   createdAt     DateTime   @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────
+// Challenges & Hackathons (Module 3)
+// ─────────────────────────────────────────────────────────────
+
+model Challenge {
+  id              String   @id @default(uuid())
+  title           String
+  description     String
+  rules           String
+  rewardBadgeType String?  // type de badge attribué au(x) gagnant(s)
+  dueDate         DateTime
+  status          String   @default("OPEN") // "OPEN" | "CLOSED"
+
+  clubId          String
+  club            Club     @relation(fields: [clubId], references: [id])
+  createdById     Int
+  createdBy       Member   @relation("ChallengeCreator", fields: [createdById], references: [id])
+
+  submissions     ChallengeSubmission[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ChallengeSubmission {
+  id           String    @id @default(uuid())
+  challengeId  String
+  challenge    Challenge @relation(fields: [challengeId], references: [id])
+  memberId     Int
+  member       Member    @relation(fields: [memberId], references: [id])
+  fileUrl      String    // lien vers le rendu (PDF, dépôt GitHub…)
+  grade        Int?      // note attribuée par le jury
+  feedback     String?   // commentaire du jury
+  isWinner     Boolean   @default(false)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([challengeId, memberId])
+}
+
+model Hackathon {
+  id           String     @id @default(uuid())
+  title        String
+  description  String
+  theme        String?
+  startDate    DateTime
+  endDate      DateTime
+  status       String     @default("PLANNED") // "PLANNED" | "ONGOING" | "DONE"
+
+  clubId       String     // affecté à un club (Cité)
+  club         Club       @relation(fields: [clubId], references: [id])
+  universityId Int
+  university   University  @relation(fields: [universityId], references: [id])
+  createdById  Int
+  createdBy    Member     @relation("HackathonCreator", fields: [createdById], references: [id])
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
