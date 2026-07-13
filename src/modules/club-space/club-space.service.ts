@@ -14,6 +14,12 @@ export interface CreateActivityDto {
   dueDate?: string;
 }
 
+export interface SubmitReportDto {
+  period: string;
+  title: string;
+  content: string;
+}
+
 const ACTIVITY_STATUSES = ['TODO', 'IN_PROGRESS', 'DONE'];
 
 @Injectable()
@@ -403,6 +409,111 @@ export class ClubSpaceService {
     return {
       success: true,
       data: { censusId: updated.id, status: updated.status },
+    };
+  }
+
+  /**
+   * Soumission du rapport mensuel d'activité & de recherche par le Responsable
+   * de Club à la Secrétaire de l'université.
+   */
+  async submitActivityReport(
+    clubId: string,
+    dto: SubmitReportDto,
+    authorId: number,
+  ) {
+    const club = await this.assertClubResponsible(clubId, authorId);
+    if (!dto.period?.trim() || !dto.title?.trim() || !dto.content?.trim()) {
+      throw new BadRequestException(
+        'Période, titre et contenu du rapport sont requis.',
+      );
+    }
+    const universityId = await this.getClubUniversityId(clubId);
+    if (!universityId) {
+      throw new BadRequestException(
+        "Impossible de déterminer l'université du club.",
+      );
+    }
+
+    const report = await this.prisma.activityReport.create({
+      data: {
+        clubId,
+        universityId,
+        authorId,
+        period: dto.period.trim(),
+        title: dto.title.trim(),
+        content: dto.content.trim(),
+      },
+    });
+
+    const secretary = await this.prisma.universityPost.findFirst({
+      where: { universityId, post: 'SECRETAIRE' },
+      select: { memberId: true },
+    });
+    if (secretary) {
+      await this.prisma.notification.create({
+        data: {
+          memberId: secretary.memberId,
+          title: 'Nouveau rapport d’activité',
+          message: `Le club « ${club.name} » a soumis un rapport (${dto.period.trim()}).`,
+        },
+      });
+    }
+
+    return {
+      success: true,
+      data: { reportId: report.id, period: report.period },
+    };
+  }
+
+  /** Rapports d'activité d'un club (Responsable / Secrétaire / ADMIN). */
+  async listClubReports(clubId: string, userId: number) {
+    // Réutilise l'autorisation de la liste des membres (mêmes ayants droit).
+    await this.getMembersList(clubId, userId);
+    const reports = await this.prisma.activityReport.findMany({
+      where: { clubId },
+      orderBy: { createdAt: 'desc' },
+      include: { author: { select: { firstname: true, lastname: true } } },
+    });
+    return {
+      success: true,
+      data: reports.map((r) => ({
+        id: r.id,
+        period: r.period,
+        title: r.title,
+        content: r.content,
+        author: `${r.author.firstname} ${r.author.lastname}`,
+        createdAt: r.createdAt,
+      })),
+    };
+  }
+
+  /** Tous les rapports d'activité d'une université (Secrétaire / ADMIN). */
+  async listUniversityReports(universityId: number) {
+    const university = await this.prisma.university.findUnique({
+      where: { id: universityId },
+    });
+    if (!university) {
+      throw new NotFoundException('Université introuvable.');
+    }
+    const reports = await this.prisma.activityReport.findMany({
+      where: { universityId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        club: { select: { name: true } },
+        author: { select: { firstname: true, lastname: true } },
+      },
+    });
+    return {
+      success: true,
+      data: reports.map((r) => ({
+        id: r.id,
+        clubName: r.club.name,
+        period: r.period,
+        title: r.title,
+        content: r.content,
+        author: `${r.author.firstname} ${r.author.lastname}`,
+        createdAt: r.createdAt,
+      })),
     };
   }
 }

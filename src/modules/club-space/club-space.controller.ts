@@ -13,7 +13,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { UniversityPostGuard } from '../../auth/university-post.guard';
 import { UniversityPosts } from '../../auth/university-post.decorator';
 import { ClubSpaceService } from './club-space.service';
-import type { CreateActivityDto } from './club-space.service';
+import type {
+  CreateActivityDto,
+  SubmitReportDto,
+} from './club-space.service';
 
 @Controller()
 export class ClubSpaceController {
@@ -84,5 +87,31 @@ export class ClubSpaceController {
     @Request() req,
   ) {
     return this.clubSpaceService.validateCensus(id, censusId, req.user.id);
+  }
+
+  /** Soumission du rapport mensuel d'activité (Responsable / ADMIN). */
+  @UseGuards(AuthGuard('jwt'))
+  @Post('clubs/:id/activity-reports')
+  async submitReport(
+    @Param('id') id: string,
+    @Body() dto: SubmitReportDto,
+    @Request() req,
+  ) {
+    return this.clubSpaceService.submitActivityReport(id, dto, req.user.id);
+  }
+
+  /** Rapports d'activité d'un club (Responsable / Secrétaire / ADMIN). */
+  @UseGuards(AuthGuard('jwt'))
+  @Get('clubs/:id/activity-reports')
+  async clubReports(@Param('id') id: string, @Request() req) {
+    return this.clubSpaceService.listClubReports(id, req.user.id);
+  }
+
+  /** Tous les rapports d'activité d'une université (Secrétaire / ADMIN). */
+  @UseGuards(AuthGuard('jwt'), UniversityPostGuard)
+  @UniversityPosts('SECRETAIRE')
+  @Get('universities/:id/activity-reports')
+  async universityReports(@Param('id', ParseIntPipe) id: number) {
+    return this.clubSpaceService.listUniversityReports(id);
   }
 }

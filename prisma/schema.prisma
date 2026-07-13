@@ -39,6 +39,7 @@ model University {
   censuses            MembershipCensus[]
   events              Event[]
   hackathons          Hackathon[]
+  activityReports     ActivityReport[]
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -125,6 +126,7 @@ model Member {
   createdChallenges    Challenge[]           @relation("ChallengeCreator")
   challengeSubmissions ChallengeSubmission[]
   createdHackathons    Hackathon[]           @relation("HackathonCreator")
+  activityReports      ActivityReport[]      @relation("ReportAuthor")
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -196,6 +198,7 @@ model Club {
   events       Event[]
   challenges   Challenge[]
   hackathons   Hackathon[]
+  activityReports ActivityReport[]
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -640,4 +643,20 @@ model Hackathon {
 
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+}
+
+// Rapport mensuel d'activité & de recherche (Responsable de Club -> Secrétaire)
+model ActivityReport {
+  id           String     @id @default(uuid())
+  clubId       String
+  club         Club       @relation(fields: [clubId], references: [id])
+  universityId Int
+  university   University  @relation(fields: [universityId], references: [id])
+  authorId     Int
+  author       Member     @relation("ReportAuthor", fields: [authorId], references: [id])
+  period       String     // ex: "2026-07" (mois concerné)
+  title        String
+  content      String     // narratif des activités et travaux de recherche
+
+  createdAt    DateTime   @default(now())
 }
