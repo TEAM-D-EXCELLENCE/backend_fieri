@@ -36,6 +36,7 @@ model University {
   treasuryTransactions TreasuryTransaction[]
   supportOffers       SupportOffer[]
   socialAccounts      SocialAccount[]
+  censuses            MembershipCensus[]
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -112,6 +113,11 @@ model Member {
   recordedTransactions TreasuryTransaction[] @relation("TransactionRecorder")
   supportOffers        SupportOffer[]
 
+  // Espace club (Cité) : activités assignées & recensements
+  assignedActivities   AssignedActivity[]
+  submittedCensuses    MembershipCensus[]    @relation("CensusSubmitter")
+  validatedCensuses    MembershipCensus[]    @relation("CensusValidator")
+
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 }
@@ -177,6 +183,8 @@ model Club {
   memberships  ClubMembership[]
   projects     Project[]
   publications Publication[]
+  assignedActivities AssignedActivity[]
+  censuses     MembershipCensus[]
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -189,6 +197,12 @@ model ClubMembership {
   memberId     Int
   member       Member       @relation(fields: [memberId], references: [id])
   status       String       @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  // Espace club : rôle interne, entretien d'admission, carte de membre
+  role            String    @default("MEMBRE") // "MEMBRE" | "RESPONSABLE"
+  interviewAt     DateTime?
+  interviewNote   String?
+  cardGeneratedAt DateTime?
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -500,4 +514,42 @@ model SocialAccount {
   updatedAt    DateTime   @updatedAt
 
   @@unique([universityId, platform])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Espace club (Cité) : activités assignées & recensement mensuel
+// ─────────────────────────────────────────────────────────────
+
+model AssignedActivity {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  memberId    Int
+  member      Member    @relation(fields: [memberId], references: [id])
+  clubId      String
+  club        Club      @relation(fields: [clubId], references: [id])
+  status      String    @default("TODO") // "TODO" | "IN_PROGRESS" | "DONE"
+  dueDate     DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model MembershipCensus {
+  id            String     @id @default(uuid())
+  clubId        String
+  club          Club       @relation(fields: [clubId], references: [id])
+  universityId  Int
+  university    University  @relation(fields: [universityId], references: [id])
+  submittedById Int
+  submittedBy   Member     @relation("CensusSubmitter", fields: [submittedById], references: [id])
+  memberCount   Int
+  // Liste figée des membres actifs au moment de la soumission : [{ id, name, email }]
+  snapshot      Json       @default("[]")
+  status        String     @default("SUBMITTED") // "SUBMITTED" | "VALIDATED"
+  validatedById Int?
+  validatedBy   Member?    @relation("CensusValidator", fields: [validatedById], references: [id])
+  validatedAt   DateTime?
+
+  createdAt     DateTime   @default(now())
 }

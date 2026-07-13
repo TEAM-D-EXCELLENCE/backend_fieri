@@ -24,6 +24,7 @@ import { TreasuryModule } from './modules/treasury/treasury.module';
 import { SupportModule } from './modules/support/support.module';
 import { CertificateModule } from './modules/certificate/certificate.module';
 import { GovernanceModule } from './modules/governance/governance.module';
+import { ClubSpaceModule } from './modules/club-space/club-space.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { GovernanceModule } from './modules/governance/governance.module';
     SupportModule,
     CertificateModule,
     GovernanceModule,
+    ClubSpaceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
