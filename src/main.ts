@@ -23,6 +23,9 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'http://localhost:5176',
       'https://fieriresearch.vercel.app',
       'https://fier2.vercel.app',
     ],
