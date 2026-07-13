@@ -23,6 +23,7 @@ import { CommonModule } from './common/common.module';
 import { TreasuryModule } from './modules/treasury/treasury.module';
 import { SupportModule } from './modules/support/support.module';
 import { CertificateModule } from './modules/certificate/certificate.module';
+import { GovernanceModule } from './modules/governance/governance.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { CertificateModule } from './modules/certificate/certificate.module';
     TreasuryModule,
     SupportModule,
     CertificateModule,
+    GovernanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
