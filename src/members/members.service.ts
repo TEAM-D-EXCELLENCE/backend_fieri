@@ -10,11 +10,35 @@ import { PrismaService } from '../prisma/prisma.service';
 export class MembersService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Profil complet d'un membre, incluant le SCOPE de gouvernance nécessaire au
+   * contrôle d'accès côté frontend :
+   *  - université/pays déduits de la branche,
+   *  - poste universitaire (TRESORIER, CHEF_UNIVERSITAIRE, SECRETAIRE, RESP_COMMUNICATION),
+   *  - poste pays (GOUVERNANT_PAYS),
+   *  - clubs dont le membre est responsable,
+   *  - adhésions de club (avec rôle interne).
+   */
   async getMemberById(id: number) {
     const member = await this.prisma.member.findUnique({
       where: { id },
+      include: {
+        branch: {
+          include: { university: { include: { country: true } } },
+        },
+        universityPost: true,
+        countryPost: true,
+        responsibleOfClubs: { select: { id: true } },
+        clubMemberships: {
+          select: { clubId: true, role: true, status: true },
+        },
+      },
     });
     if (!member) return null;
+
+    const university = member.branch?.university ?? null;
+    const country = university?.country ?? null;
+
     return {
       id: member.id,
       email: member.email,
@@ -22,6 +46,31 @@ export class MembersService {
       lastName: member.lastname,
       role: member.role,
       branchId: member.branchId,
+      isEmblematic: member.isEmblematic,
+      avatarUrl: member.avatarUrl,
+      bio: member.bio,
+      skills: member.skills,
+      distinctions: member.distinctions,
+      // Scope géographique déduit
+      universityId: university?.id ?? null,
+      universityName: university?.name ?? null,
+      countryId: country?.id ?? null,
+      countryName: country?.name ?? null,
+      // Postes de gouvernance scopés
+      universityPost: member.universityPost
+        ? {
+            post: member.universityPost.post,
+            universityId: member.universityPost.universityId,
+          }
+        : null,
+      countryPost: member.countryPost
+        ? {
+            post: member.countryPost.post,
+            countryId: member.countryPost.countryId,
+          }
+        : null,
+      responsibleClubIds: member.responsibleOfClubs.map((c) => c.id),
+      clubMemberships: member.clubMemberships,
       createdAt: member.createdAt,
     };
   }
