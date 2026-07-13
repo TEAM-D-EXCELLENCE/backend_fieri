@@ -95,13 +95,20 @@ export class ProjectController {
   @UseGuards(AuthGuard('jwt'))
   @Post(':id/follow')
   async followProject(@Param('id') id: string, @Request() req) {
-    return this.projectService.toggleFollowProject(id, req.user.id);
+    return this.projectService.followProject(id, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id/follow')
   async unfollowProject(@Param('id') id: string, @Request() req) {
     return this.projectService.unfollowProject(id, req.user.id);
+  }
+
+  // Conserve la bascule pour les clients qui l'utilisent (bouton étoile).
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/toggle-follow')
+  async toggleFollowProject(@Param('id') id: string, @Request() req) {
+    return this.projectService.toggleFollowProject(id, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'))
