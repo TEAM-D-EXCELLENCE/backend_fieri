@@ -34,6 +34,22 @@ async function main() {
   console.log('Début du seeding…');
 
   // 1. Nettoyage (ordre = enfants avant parents, pour respecter les FK)
+  // ── Modèles Community OS (supprimés en premier : ils référencent
+  //    member / club / university supprimés plus bas) ──
+  await prisma.challengeSubmission.deleteMany({});
+  await prisma.challenge.deleteMany({});
+  await prisma.hackathon.deleteMany({});
+  await prisma.activityReport.deleteMany({});
+  await prisma.membershipCensus.deleteMany({});
+  await prisma.assignedActivity.deleteMany({});
+  await prisma.certificate.deleteMany({});
+  await prisma.treasuryTransaction.deleteMany({});
+  await prisma.treasuryAccount.deleteMany({});
+  await prisma.supportOffer.deleteMany({});
+  await prisma.socialAccount.deleteMany({});
+  await prisma.countryPost.deleteMany({});
+  await prisma.universityPost.deleteMany({});
+  // ── Modèles existants ──
   await prisma.application.deleteMany({});
   await prisma.opportunity.deleteMany({});
   await prisma.badge.deleteMany({});
@@ -181,6 +197,7 @@ async function main() {
   ];
 
   const studentsByClub: Record<string, { id: number; firstname: string; lastname: string }[]> = {};
+  const responsiblesByClub: Record<string, { id: number; firstname: string; lastname: string }> = {};
   const allStudents: { id: number; firstname: string; lastname: string }[] = [];
 
   for (const bp of clubBlueprints) {
@@ -208,10 +225,11 @@ async function main() {
       },
     });
 
-    // Le responsable est aussi membre approuvé de son propre club.
+    // Le responsable est aussi membre approuvé de son propre club (rôle interne RESPONSABLE).
     await prisma.clubMembership.create({
-      data: { clubId: club.id, memberId: resp.id, status: 'APPROVED' },
+      data: { clubId: club.id, memberId: resp.id, status: 'APPROVED', role: 'RESPONSABLE' },
     });
+    responsiblesByClub[bp.id] = resp;
 
     const created: { id: number; firstname: string; lastname: string }[] = [];
     for (const s of bp.students) {
@@ -426,17 +444,24 @@ async function main() {
   }
   console.log(`Formations (${workshopsSeed.length}) créées.`);
 
-  // 10. Événements — 4 ─────────────────────────────────────────────────────────
+  // 10. Événements — 4 (enrichis : université, club, organisateur, publication) ─
   const eventsSeed = [
-    { id: 'event-101', title: 'Symposium Africain sur l\'IA 2026', date: new Date('2026-08-15T09:00:00Z'), isLive: false, streamUrl: 'https://live.fieri.org/symposium2026' },
-    { id: 'event-102', title: 'Hackathon AgriTech Dakar', date: new Date('2026-09-05T08:00:00Z'), isLive: false, streamUrl: 'https://live.fieri.org/hackathon-agritech' },
-    { id: 'event-103', title: 'Webinaire : Robotique mobile en Afrique', date: new Date('2026-07-12T15:00:00Z'), isLive: true, streamUrl: 'https://live.fieri.org/webinaire-robotique' },
-    { id: 'event-104', title: 'Forum Énergies Renouvelables', date: new Date('2026-11-20T09:30:00Z'), isLive: false, streamUrl: 'https://live.fieri.org/forum-energie' },
+    { id: 'event-101', title: 'Symposium Africain sur l\'IA 2026', description: 'Deux jours de conférences et démonstrations autour de l\'IA appliquée.', date: new Date('2026-08-15T09:00:00Z'), endDate: new Date('2026-08-16T18:00:00Z'), isLive: false, streamUrl: 'https://live.fieri.org/symposium2026', universityId: uac.id, clubId: 'club-robotique', isPublished: true, socialShared: false },
+    { id: 'event-102', title: 'Hackathon AgriTech Dakar', description: 'Un hackathon de 48h dédié à l\'agriculture de précision.', date: new Date('2026-09-05T08:00:00Z'), endDate: new Date('2026-09-07T18:00:00Z'), isLive: false, streamUrl: 'https://live.fieri.org/hackathon-agritech', universityId: ucad.id, clubId: 'club-agri', isPublished: true, socialShared: true },
+    { id: 'event-103', title: 'Webinaire : Robotique mobile en Afrique', description: 'Retour d\'expérience sur la navigation autonome LiDAR.', date: new Date('2026-07-12T15:00:00Z'), endDate: null, isLive: true, streamUrl: 'https://live.fieri.org/webinaire-robotique', universityId: uac.id, clubId: 'club-robotique', isPublished: true, socialShared: false },
+    { id: 'event-104', title: 'Forum Énergies Renouvelables', description: 'Table ronde sur les micro-grids solaires en zone rurale.', date: new Date('2026-11-20T09:30:00Z'), endDate: null, isLive: false, streamUrl: 'https://live.fieri.org/forum-energie', universityId: uac.id, clubId: 'club-energie', isPublished: false, socialShared: false },
   ];
   for (const ev of eventsSeed) {
-    await prisma.event.create({ data: ev });
+    const organizer = ev.clubId ? responsiblesByClub[ev.clubId] : null;
+    await prisma.event.create({
+      data: { ...ev, organizerId: organizer?.id ?? null },
+    });
   }
-  console.log(`Événements (${eventsSeed.length}) créés.`);
+  // Quelques inscriptions (dont une présence effective) sur le webinaire passé.
+  const roboStudents = studentsByClub['club-robotique'];
+  await prisma.eventRegistration.create({ data: { eventId: 'event-103', memberId: roboStudents[0].id, attended: true } });
+  await prisma.eventRegistration.create({ data: { eventId: 'event-103', memberId: roboStudents[1].id, attended: false } });
+  console.log(`Événements (${eventsSeed.length}) créés (avec inscriptions).`);
 
   // 11. Actualités (News) — 4 (toutes APPROVED pour être visibles) ─────────────
   const newsSeed = [
@@ -464,13 +489,103 @@ async function main() {
   }
   console.log(`Opportunités (${opportunitiesSeed.length}) créées.`);
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 13. GOUVERNANCE (Community OS) — postes scopés UAC + Gouverneur Bénin
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Ces comptes tirent leur autorité de leur POSTE (UniversityPost/CountryPost),
+  // pas de leur rôle global (volontairement ETUDIANT) : cela valide le RBAC scopé.
+  const chefUac = await prisma.member.create({
+    data: { firstname: 'Cordelia', lastname: 'Akpédjé', email: 'chef.uac@fieri.com', password, branchId: brUac.id, role: 'ETUDIANT', bio: 'Chef Universitaire — UAC.', signatureUrl: 'https://files.fieri.org/signatures/chef-uac.png' },
+  });
+  const secretaireUac = await prisma.member.create({
+    data: { firstname: 'Blandine', lastname: 'Kpogli', email: 'secretaire.uac@fieri.com', password, branchId: brUac.id, role: 'ETUDIANT', bio: 'Secrétaire — UAC.' },
+  });
+  const tresorierUac = await prisma.member.create({
+    data: { firstname: 'Serge', lastname: 'Ahouandjinou', email: 'tresorier.uac@fieri.com', password, branchId: brUac.id, role: 'ETUDIANT', bio: 'Trésorier — UAC.' },
+  });
+  const commUac = await prisma.member.create({
+    data: { firstname: 'Inès', lastname: 'Houssou', email: 'comm.uac@fieri.com', password, branchId: brUac.id, role: 'ETUDIANT', bio: 'Responsable Communication — UAC.' },
+  });
+  const gouverneurBenin = await prisma.member.create({
+    data: { firstname: 'Firmin', lastname: 'Dossa', email: 'gouverneur.benin@fieri.com', password, branchId: brUac.id, role: 'ETUDIANT', bio: 'Gouverneur Pays — Bénin.' },
+  });
+
+  await prisma.universityPost.create({ data: { universityId: uac.id, memberId: chefUac.id, post: 'CHEF_UNIVERSITAIRE' } });
+  await prisma.universityPost.create({ data: { universityId: uac.id, memberId: secretaireUac.id, post: 'SECRETAIRE' } });
+  await prisma.universityPost.create({ data: { universityId: uac.id, memberId: tresorierUac.id, post: 'TRESORIER' } });
+  await prisma.universityPost.create({ data: { universityId: uac.id, memberId: commUac.id, post: 'RESP_COMMUNICATION' } });
+  await prisma.countryPost.create({ data: { countryId: benin.id, memberId: gouverneurBenin.id, post: 'GOUVERNANT_PAYS' } });
+  console.log('Postes de gouvernance créés (Chef, Secrétaire, Trésorier, Resp. Comm — UAC ; Gouverneur — Bénin).');
+
+  // 14. TRÉSORERIE UAC — compte + grand livre
+  const treasuryTx = [
+    { type: 'COTISATION', amount: 50000, label: 'Cotisations mensuelles des membres' },
+    { type: 'SUBVENTION', amount: 200000, label: 'Subvention partenaire académique' },
+    { type: 'DON', amount: 120000, label: 'Don en ligne — Société Alpha' },
+    { type: 'DEPENSE', amount: -75000, label: 'Achat de matériel robotique' },
+  ];
+  const treasuryBalance = treasuryTx.reduce((s, t) => s + t.amount, 0);
+  await prisma.treasuryAccount.create({ data: { universityId: uac.id, balance: treasuryBalance } });
+  for (const t of treasuryTx) {
+    await prisma.treasuryTransaction.create({ data: { universityId: uac.id, type: t.type, amount: t.amount, label: t.label, recordedById: tresorierUac.id } });
+  }
+  console.log(`Trésorerie UAC créée (solde ${treasuryBalance} FCFA, ${treasuryTx.length} transactions).`);
+
+  // 15. SOUTIENS — un don financier validé + une offre physique signée
+  await prisma.supportOffer.create({
+    data: { donorName: 'Société Alpha', donorEmail: 'contact@alpha.io', type: 'FINANCIAL', financialPlatform: 'GENIUS_PAY', amount: 120000, description: 'Don financier pour le Pôle Robotique.', status: 'VALIDATED', universityId: uac.id, paymentReference: 'seed-genius-ref-001' },
+  });
+  await prisma.supportOffer.create({
+    data: { donorName: 'Cabinet TechPartners', donorEmail: 'partenariat@techpartners.io', type: 'PHYSICAL', physicalType: 'MATERIEL', description: '5 ordinateurs portables pour la Cité Robotique.', status: 'PENDING', universityId: uac.id, fingerprintHash: 'a3f5c9e1b2d4867012ab34cd56ef7890a3f5c9e1b2d4867012ab34cd56ef7890', signatureDocUrl: 'https://files.fieri.org/support/entente-seed.pdf' },
+  });
+  console.log('Offres de soutien créées (1 financière validée, 1 physique signée).');
+
+  // 16. ATTESTATION — délivrée par le Chef Universitaire
+  await prisma.certificate.create({
+    data: { recipientId: roboStudents[0].id, issuerId: chefUac.id, title: 'Formation ROS2 & SLAM', category: 'FORMATION', fileUrl: 'https://files.fieri.org/certificates/attestation-seed.pdf' },
+  });
+  console.log('Attestation créée (Chef → étudiant Robotique).');
+
+  // 17. ESPACE CITE — activités assignées, recensement, rapport d'activité
+  const roboResp = responsiblesByClub['club-robotique'];
+  await prisma.assignedActivity.create({ data: { clubId: 'club-robotique', memberId: roboStudents[0].id, title: 'Préparer la démo LiDAR du symposium', description: 'Monter le banc de test et calibrer les capteurs.', status: 'IN_PROGRESS', dueDate: new Date('2026-08-10T00:00:00Z') } });
+  await prisma.assignedActivity.create({ data: { clubId: 'club-robotique', memberId: roboStudents[1].id, title: "Rédiger le guide d'installation ROS2", status: 'TODO' } });
+
+  const roboSnapshot = [
+    ...roboStudents.map((s) => ({ id: s.id, name: `${s.firstname} ${s.lastname}` })),
+    { id: roboResp.id, name: `${roboResp.firstname} ${roboResp.lastname}` },
+  ];
+  await prisma.membershipCensus.create({
+    data: { clubId: 'club-robotique', universityId: uac.id, submittedById: roboResp.id, memberCount: roboSnapshot.length, snapshot: roboSnapshot, status: 'SUBMITTED' },
+  });
+  await prisma.activityReport.create({
+    data: { clubId: 'club-robotique', universityId: uac.id, authorId: roboResp.id, period: '2026-07', title: "Rapport d'activité — Juillet 2026", content: 'Avancement du projet de navigation autonome, 2 ateliers internes, préparation du symposium.' },
+  });
+  console.log('Espace CITE peuplé (2 activités, 1 recensement, 1 rapport).');
+
+  // 18. CHALLENGES & HACKATHONS
+  const challenge = await prisma.challenge.create({
+    data: { clubId: 'club-robotique', createdById: roboResp.id, title: 'Défi SLAM 2026', description: 'Cartographier un environnement inconnu en moins de 5 minutes.', rules: 'Rendu : dépôt GitHub + vidéo de démonstration. Barème sur 20.', rewardBadgeType: 'INNOVATEUR', dueDate: new Date('2026-09-30T23:59:00Z'), status: 'OPEN' },
+  });
+  await prisma.challengeSubmission.create({ data: { challengeId: challenge.id, memberId: roboStudents[0].id, fileUrl: 'https://github.com/aurel/slam-challenge', grade: 17, feedback: 'Excellente cartographie, latence à optimiser.' } });
+  await prisma.challengeSubmission.create({ data: { challengeId: challenge.id, memberId: roboStudents[1].id, fileUrl: 'https://github.com/fatima/slam-vision' } });
+  await prisma.hackathon.create({
+    data: { universityId: uac.id, clubId: 'club-robotique', createdById: chefUac.id, title: 'Hackathon Robotique UAC', description: "48h pour prototyper un robot d'assistance.", theme: "Robotique d'assistance", startDate: new Date('2026-10-10T08:00:00Z'), endDate: new Date('2026-10-12T18:00:00Z'), status: 'PLANNED' },
+  });
+  console.log('Challenge (2 soumissions) et hackathon créés.');
+
   console.log('\nSeeding terminé avec succès ! ✅');
   console.log('Comptes de démo (mot de passe : SecurePassword123!) :');
-  console.log('  • admin@fieri.com        → ADMIN');
-  console.log('  • responsable@fieri.com  → RESPONSABLE (sans club)');
-  console.log('  • resp.<club>@fieri.com  → RESPONSABLE (1 par club : robotique, bio, energie, data, agri, sante)');
-  console.log('  • candidat@fieri.com     → CHERCHEUR (sans club)');
-  console.log('  • aurel.sossou@fieri.com → ETUDIANT (Pôle Robotique & IA)  … + 17 autres étudiants');
+  console.log('  • admin@fieri.com            → ADMIN (portée globale)');
+  console.log('  • chef.uac@fieri.com         → Chef Universitaire (UAC) — attestations, exclusions, trésorerie, hackathons');
+  console.log('  • tresorier.uac@fieri.com    → Trésorier (UAC) — grand livre & transactions');
+  console.log('  • secretaire.uac@fieri.com   → Secrétaire (UAC) — recensements & rapports');
+  console.log('  • comm.uac@fieri.com         → Resp. Communication (UAC) — inscrits & publication réseaux');
+  console.log('  • gouverneur.benin@fieri.com → Gouverneur Pays (Bénin)');
+  console.log('  • resp.robotique@fieri.com   → Responsable de Club (challenges, activités, recensement) — + 5 autres resp.<club>');
+  console.log('  • responsable@fieri.com      → RESPONSABLE (rôle global, sans club)');
+  console.log('  • candidat@fieri.com         → CHERCHEUR (sans club)');
+  console.log('  • aurel.sossou@fieri.com     → ETUDIANT (Pôle Robotique & IA)  … + 17 autres étudiants');
 }
 
 main()
