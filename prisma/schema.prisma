@@ -37,6 +37,7 @@ model University {
   supportOffers       SupportOffer[]
   socialAccounts      SocialAccount[]
   censuses            MembershipCensus[]
+  events              Event[]
 
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -117,6 +118,7 @@ model Member {
   assignedActivities   AssignedActivity[]
   submittedCensuses    MembershipCensus[]    @relation("CensusSubmitter")
   validatedCensuses    MembershipCensus[]    @relation("CensusValidator")
+  organizedEvents      Event[]               @relation("EventOrganizer")
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
@@ -185,6 +187,7 @@ model Club {
   publications Publication[]
   assignedActivities AssignedActivity[]
   censuses     MembershipCensus[]
+  events       Event[]
 
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -243,6 +246,19 @@ model Event {
   isLive          Boolean      @default(false)
   streamUrl       String
 
+  // Extensions communautaires (Module 2)
+  description     String       @default("")
+  endDate         DateTime?
+  isPublished     Boolean      @default(false)
+  socialShared    Boolean      @default(false)
+
+  clubId          String?
+  club            Club?        @relation(fields: [clubId], references: [id])
+  universityId    Int?
+  university      University?  @relation(fields: [universityId], references: [id])
+  organizerId     Int?
+  organizer       Member?      @relation("EventOrganizer", fields: [organizerId], references: [id])
+
   registrations   EventRegistration[]
 
   createdAt       DateTime     @default(now())
@@ -255,6 +271,9 @@ model EventRegistration {
   event           Event        @relation(fields: [eventId], references: [id])
   memberId        Int
   member          Member       @relation(fields: [memberId], references: [id])
+
+  // Présence effective renseignée par l'organisateur en fin d'événement
+  attended        Boolean      @default(false)
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt

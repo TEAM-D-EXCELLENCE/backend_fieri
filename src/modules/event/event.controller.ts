@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -19,8 +20,28 @@ export class EventController {
   constructor(private readonly eventService: EventService) {}
 
   @Get()
-  async getEvents() {
-    return this.eventService.getEvents();
+  async getEvents(
+    @Query('scope') scope?: string,
+    @Query('universityId') universityId?: string,
+    @Query('clubId') clubId?: string,
+  ) {
+    return this.eventService.getEvents({
+      scope: scope === 'past' || scope === 'upcoming' ? scope : undefined,
+      universityId: universityId ? Number(universityId) : undefined,
+      clubId: clubId || undefined,
+    });
+  }
+
+  // Doit être déclaré AVANT `:id` pour ne pas être capturé par le paramètre.
+  @Get('history')
+  async getHistory(
+    @Query('universityId') universityId?: string,
+    @Query('clubId') clubId?: string,
+  ) {
+    return this.eventService.getHistory({
+      universityId: universityId ? Number(universityId) : undefined,
+      clubId: clubId || undefined,
+    });
   }
 
   @Get(':id')
@@ -29,22 +50,27 @@ export class EventController {
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'RESPONSABLE')
   @Post()
   async createEvent(
     @Body()
     data: {
       title: string;
       date: string;
+      endDate?: string;
+      description?: string;
       isLive?: boolean;
       streamUrl?: string;
+      clubId?: string;
+      universityId?: number;
     },
+    @Request() req,
   ) {
-    return this.eventService.createEvent(data);
+    return this.eventService.createEvent(data, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('ADMIN')
+  @Roles('ADMIN', 'RESPONSABLE')
   @Put(':id')
   async updateEvent(
     @Param('id') id: string,
@@ -75,5 +101,30 @@ export class EventController {
   @Get(':id/stream')
   async getStream(@Param('id') id: string, @Request() req) {
     return this.eventService.getEventStream(id, req.user.id);
+  }
+
+  /** Liste des inscrits — RESP_COMM / CHEF_UNIV / organisateur. */
+  @UseGuards(AuthGuard('jwt'))
+  @Get(':id/registrants')
+  async registrants(@Param('id') id: string, @Request() req) {
+    return this.eventService.getRegistrants(id, req.user.id);
+  }
+
+  /** Marque les présences effectives — organisateur / responsable / chef. */
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/mark-attendance')
+  async markAttendance(
+    @Param('id') id: string,
+    @Body() body: { memberIds: number[] },
+    @Request() req,
+  ) {
+    return this.eventService.markAttendance(id, body.memberIds, req.user.id);
+  }
+
+  /** Publication réseaux sociaux (OAuth mockée) — RESP_COMM / CHEF_UNIV. */
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/publish-social')
+  async publishSocial(@Param('id') id: string, @Request() req) {
+    return this.eventService.publishSocial(id, req.user.id);
   }
 }
