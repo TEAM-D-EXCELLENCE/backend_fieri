@@ -42,7 +42,7 @@ export class ProjectController {
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('CHERCHEUR', 'ADMIN')
+  @Roles('CHERCHEUR', 'RESPONSABLE_CLUB', 'RESPONSABLE', 'ADMIN')
   @Post()
   async createProject(
     @Request() req,
@@ -61,7 +61,7 @@ export class ProjectController {
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('CHERCHEUR', 'ADMIN')
+  @Roles('CHERCHEUR', 'RESPONSABLE_CLUB', 'RESPONSABLE', 'ADMIN')
   @Put(':id')
   async updateProject(
     @Request() req,
@@ -86,7 +86,7 @@ export class ProjectController {
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('CHERCHEUR', 'ADMIN')
+  @Roles('CHERCHEUR', 'RESPONSABLE_CLUB', 'RESPONSABLE', 'ADMIN')
   @Delete(':id')
   async deleteProject(@Request() req, @Param('id') id: string) {
     return this.projectService.deleteProject(id, req.user.id, req.user.role);
