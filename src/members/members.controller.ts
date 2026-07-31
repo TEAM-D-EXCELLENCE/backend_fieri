@@ -33,8 +33,6 @@ export class MembersController {
     };
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('ADMIN')
   @Get()
   async getMembers(
     @Query('search') search?: string,
