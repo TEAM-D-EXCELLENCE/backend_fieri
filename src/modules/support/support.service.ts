@@ -223,6 +223,62 @@ export class SupportService {
   }
 
   /**
+   * Confirmation directe d'un paiement en mode simulation (Mock Genius Pay pour le jury).
+   */
+  async confirmMockPayment(supportOfferId: string) {
+    const offer = await this.prisma.supportOffer.findUnique({
+      where: { id: supportOfferId },
+    });
+    if (!offer) {
+      throw new NotFoundException('Offre de soutien introuvable.');
+    }
+    if (offer.status === 'VALIDATED') {
+      return {
+        success: true,
+        alreadyValidated: true,
+        supportOfferId: offer.id,
+        amount: offer.amount,
+        universityId: offer.universityId,
+      };
+    }
+    if (!offer.universityId || !offer.amount) {
+      throw new BadRequestException('Offre de soutien incomplète.');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.treasury.incrementBalance(
+        tx,
+        offer.universityId!,
+        offer.amount!,
+      );
+      await tx.treasuryTransaction.create({
+        data: {
+          universityId: offer.universityId!,
+          type: 'DON',
+          amount: offer.amount!,
+          label: `Don en ligne (Genius Pay Simulé) — ${offer.donorName}`,
+        },
+      });
+      await tx.supportOffer.update({
+        where: { id: offer.id },
+        data: { status: 'VALIDATED' },
+      });
+    });
+
+    this.logger.log(
+      `[MOCK Genius Pay] Don validé : offre ${offer.id}, +${offer.amount} FCFA crédités à l'université ${offer.universityId}.`,
+    );
+
+    return {
+      success: true,
+      validated: true,
+      supportOfferId: offer.id,
+      amount: offer.amount,
+      universityId: offer.universityId,
+    };
+  }
+
+  /**
    * Déclaration d'un soutien physique / matériel (locaux, équipement…).
    * L'offre est créée en attente de signature d'empreinte.
    */

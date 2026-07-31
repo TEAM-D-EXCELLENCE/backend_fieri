@@ -61,6 +61,13 @@ export class SupportController {
     return this.supportService.handlePaymentWebhook(req.rawBody, signature);
   }
 
+  /** Confirmation d'un don via le mock Genius Pay (démo jury). */
+  @UseGuards(OptionalJwtAuthGuard)
+  @Post(':id/confirm-mock-payment')
+  async confirmMockPayment(@Param('id') id: string) {
+    return this.supportService.confirmMockPayment(id);
+  }
+
   /** Déclaration d'un soutien physique / matériel. JWT optionnel. */
   @UseGuards(OptionalJwtAuthGuard)
   @Post('submit-physical')

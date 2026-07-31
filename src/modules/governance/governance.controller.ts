@@ -50,4 +50,21 @@ export class GovernanceController {
   async listDeletionRequests(@Param('id', ParseIntPipe) id: number) {
     return this.governanceService.listDeletionRequests(id);
   }
+
+  /** Activer / Désactiver le statut "Figure emblématique" — Chef Universitaire / ADMIN. */
+  @UseGuards(AuthGuard('jwt'))
+  @Post('members/:id/toggle-emblematic')
+  async toggleEmblematic(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { isEmblematic: boolean },
+    @Request() req,
+  ) {
+    return this.governanceService.toggleEmblematic(id, body.isEmblematic, req.user.id);
+  }
+
+  /** Liste publique des figures emblématiques de la communauté. */
+  @Get('emblematic-figures')
+  async getEmblematicFigures() {
+    return this.governanceService.listEmblematicMembers();
+  }
 }

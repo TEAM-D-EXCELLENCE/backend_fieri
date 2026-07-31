@@ -103,6 +103,11 @@ export class MembersService {
         skip,
         take: params.limit,
         orderBy: { createdAt: 'desc' },
+        include: {
+          universityPost: true,
+          countryPost: true,
+          responsibleOfClubs: { select: { id: true } },
+        },
       }),
       this.prisma.member.count({ where }),
     ]);
@@ -116,6 +121,14 @@ export class MembersService {
         email: m.email,
         role: m.role,
         branchId: m.branchId,
+        isEmblematic: m.isEmblematic,
+        universityPost: m.universityPost
+          ? { post: m.universityPost.post, universityId: m.universityPost.universityId }
+          : null,
+        countryPost: m.countryPost
+          ? { post: m.countryPost.post, countryId: m.countryPost.countryId }
+          : null,
+        responsibleClubIds: m.responsibleOfClubs?.map((c) => c.id) || [],
         createdAt: m.createdAt,
       })),
       pagination: {

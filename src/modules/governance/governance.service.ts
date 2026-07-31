@@ -296,4 +296,96 @@ export class GovernanceService {
       })),
     };
   }
+
+  /**
+   * Modifie le statut "Figure emblématique" d'un membre (isEmblematic).
+   * Réservé aux Chefs Universitaires et Administrateurs.
+   */
+  async toggleEmblematic(
+    targetMemberId: number,
+    isEmblematic: boolean,
+    requesterId: number,
+  ) {
+    const target = await this.prisma.member.findUnique({
+      where: { id: targetMemberId },
+    });
+    if (!target) {
+      throw new NotFoundException('Membre introuvable.');
+    }
+
+    const requester = await this.prisma.member.findUnique({
+      where: { id: requesterId },
+      include: { universityPost: true },
+    });
+    if (!requester) {
+      throw new UnauthorizedException('Utilisateur non identifié.');
+    }
+
+    const isAdmin = requester.role === 'ADMIN';
+    const isChef = requester.universityPost?.post === 'CHEF_UNIVERSITAIRE';
+    if (!isAdmin && !isChef) {
+      throw new ForbiddenException(
+        'Action réservée aux Chefs Universitaires et Administrateurs.',
+      );
+    }
+
+    const updated = await this.prisma.member.update({
+      where: { id: targetMemberId },
+      data: { isEmblematic },
+    });
+
+    return {
+      success: true,
+      message: isEmblematic
+        ? 'Membre défini comme figure emblématique.'
+        : 'Statut de figure emblématique retiré.',
+      data: {
+        id: updated.id,
+        isEmblematic: updated.isEmblematic,
+      },
+    };
+  }
+
+  /**
+   * Récupère la liste des figures emblématiques (isEmblematic = true).
+   */
+  async listEmblematicMembers(universityId?: number) {
+    const where: any = { isEmblematic: true, isActive: true };
+    if (universityId) {
+      where.branch = { universityId };
+    }
+
+    const members = await this.prisma.member.findMany({
+      where,
+      select: {
+        id: true,
+        firstname: true,
+        lastname: true,
+        email: true,
+        role: true,
+        bio: true,
+        avatarUrl: true,
+        isEmblematic: true,
+        branch: {
+          select: { name: true, university: { select: { id: true, name: true } } },
+        },
+      },
+      orderBy: { lastname: 'asc' },
+    });
+
+    return {
+      success: true,
+      data: members.map((m) => ({
+        id: m.id,
+        name: `${m.firstname} ${m.lastname}`,
+        email: m.email,
+        role: m.role,
+        bio: m.bio,
+        avatarUrl: m.avatarUrl,
+        isEmblematic: m.isEmblematic,
+        branch: m.branch?.name ?? null,
+        universityName: m.branch?.university?.name ?? null,
+      })),
+    };
+  }
 }

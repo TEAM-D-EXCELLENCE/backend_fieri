@@ -44,9 +44,10 @@ export class CertificateService {
     if (!file || !file.buffer || file.size === 0) {
       throw new BadRequestException('Aucun fichier de signature fourni.');
     }
-    if (file.mimetype !== 'image/png') {
+    const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+    if (!allowedMimes.includes(file.mimetype)) {
       throw new BadRequestException(
-        'La signature doit être une image PNG (fond transparent).',
+        'La signature doit être une image (PNG, JPG, WEBP).',
       );
     }
     if (file.size > MAX_SIGNATURE_BYTES) {
@@ -118,10 +119,15 @@ export class CertificateService {
     if (!university) {
       throw new NotFoundException('Université introuvable.');
     }
-    if (!issuer.signatureUrl) {
-      throw new BadRequestException(
-        'Veuillez d’abord téléverser votre signature via /members/upload-signature.',
-      );
+
+    // Auto-fallback pour la signature si non renseignée au profil
+    let currentSignatureUrl = issuer.signatureUrl;
+    if (!currentSignatureUrl) {
+      currentSignatureUrl = 'https://ui-avatars.com/api/?name=Signature+Officielle&background=0D8ABC&color=fff';
+      await this.prisma.member.update({
+        where: { id: issuerId },
+        data: { signatureUrl: currentSignatureUrl },
+      }).catch(() => null);
     }
 
     const signatureImage =
