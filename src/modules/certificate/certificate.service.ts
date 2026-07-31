@@ -130,8 +130,9 @@ export class CertificateService {
       }).catch(() => null);
     }
 
-    const signatureImage =
-      (await this.storage.readByUrl(issuer.signatureUrl)) ?? undefined;
+    const signatureImage = currentSignatureUrl
+      ? (await this.storage.readByUrl(currentSignatureUrl)) ?? undefined
+      : undefined;
     if (!signatureImage) {
       this.logger.warn(
         `Signature introuvable au stockage pour l'émetteur ${issuerId} — émission sans image.`,
