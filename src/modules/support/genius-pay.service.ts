@@ -131,7 +131,7 @@ export class GeniusPayService {
     rawBody: Buffer | string,
     signatureHeader?: string,
   ): boolean {
-    if (process.env.GENIUS_PAY_MOCK === 'true' || signatureHeader === 'mock') {
+    if (process.env.GENIUS_PAY_MOCK === 'true') {
       return true;
     }
     if (!this.webhookSecret) {

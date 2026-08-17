@@ -1,4 +1,5 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
+import helmet from 'helmet';
 import { join, isAbsolute } from 'path';
 
 /**
@@ -10,6 +11,15 @@ import { join, isAbsolute } from 'path';
  * points d'entrée, sous peine de divergence entre local et production.
  */
 export function configureApp(app: NestExpressApplication): void {
+  // En-têtes de sécurité. `crossOriginResourcePolicy: cross-origin` est
+  // requis pour que le frontend (domaine Vercel distinct) puisse afficher
+  // les PDF/images servis sous /uploads.
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
+
   // Sert les fichiers générés (attestations PDF, ententes, signatures) sous
   // `/uploads`. Doit rester aligné avec `StorageService`.
   const storageDir = process.env.FILE_STORAGE_DIR;

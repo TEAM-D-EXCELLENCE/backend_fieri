@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { OrganizationModule } from './modules/organization/organization.module';
@@ -29,6 +31,9 @@ import { CompetitionModule } from './modules/competition/competition.module';
 
 @Module({
   imports: [
+    // Limite globale : 60 requêtes / minute par IP (les endpoints sensibles
+    // sont restreints individuellement via @Throttle).
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 60 }]),
     OrganizationModule,
     AuthModule,
     MembersModule,
@@ -56,6 +61,11 @@ import { CompetitionModule } from './modules/competition/competition.module';
     CompetitionModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Garde anti-bruteforce globale : 60 requêtes / minute par IP par
+    // défaut, restreinte sur les endpoints sensibles via @Throttle.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

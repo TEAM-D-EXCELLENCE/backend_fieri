@@ -2,6 +2,11 @@ import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
+if (process.env.NODE_ENV === 'production') {
+  console.error('Erreur : le seed contient des identifiants de démonstration et ne doit jamais être exécuté en production.');
+  process.exit(1);
+}
+
 const prisma = new PrismaClient();
 
 async function main() {

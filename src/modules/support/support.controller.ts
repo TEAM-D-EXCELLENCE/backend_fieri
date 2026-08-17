@@ -7,9 +7,12 @@ import {
   Headers,
   HttpCode,
   UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
+import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
 import { SupportService } from './support.service';
 import type {
@@ -39,6 +42,7 @@ export class SupportController {
    * Public : le donateur peut être anonyme ou connecté (JWT optionnel).
    */
   @UseGuards(OptionalJwtAuthGuard)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('initiate-financial')
   async initiateFinancial(
     @Body() dto: InitiateFinancialDto,
@@ -53,6 +57,7 @@ export class SupportController {
    * La signature est validée à partir du corps BRUT de la requête.
    */
   @Post('payment-webhook')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(200)
   async paymentWebhook(
     @Req() req: RawBodyRequest<Request>,
@@ -61,10 +66,14 @@ export class SupportController {
     return this.supportService.handlePaymentWebhook(req.rawBody, signature);
   }
 
-  /** Confirmation d'un don via le mock Genius Pay (démo jury). */
-  @UseGuards(OptionalJwtAuthGuard)
+  /** Confirmation d'un don via le mock Genius Pay (démo jury uniquement). */
+  @UseGuards(AuthGuard('jwt'))
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post(':id/confirm-mock-payment')
   async confirmMockPayment(@Param('id') id: string) {
+    if (process.env.GENIUS_PAY_MOCK !== 'true') {
+      throw new NotFoundException('Mode simulation désactivé.');
+    }
     return this.supportService.confirmMockPayment(id);
   }
 

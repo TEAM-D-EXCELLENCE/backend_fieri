@@ -21,7 +21,6 @@ export class ResearcherService {
       id: m.id,
       firstName: m.firstname,
       lastName: m.lastname,
-      email: m.email,
       role: m.role,
       bio: m.bio || '',
       skills: m.skills,
