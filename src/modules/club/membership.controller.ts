@@ -17,6 +17,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+import { ClubFrom, ClubManagerGuard } from '../../auth/guards';
 
 @Controller('memberships')
 export class MembershipController {
@@ -35,24 +36,20 @@ export class MembershipController {
     return this.clubService.createMembershipRequest(clubId, req.user.id);
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard, ClubManagerGuard)
   @Roles('RESPONSABLE', 'ADMIN')
+  @ClubFrom({ param: 'clubId' })
   @Get('requests/pending/:clubId')
-  async getPendingRequests(
-    @Param('clubId') clubId: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.clubService.getPendingRequestsForClub(clubId, req.user);
+  async getPendingRequests(@Param('clubId') clubId: string) {
+    return this.clubService.getPendingRequestsForClub(clubId);
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard, ClubManagerGuard)
   @Roles('RESPONSABLE', 'ADMIN')
+  @ClubFrom({ param: 'clubId' })
   @Get('requests/club/:clubId')
-  async getClubHistory(
-    @Param('clubId') clubId: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.clubService.getClubHistory(clubId, req.user);
+  async getClubHistory(@Param('clubId') clubId: string) {
+    return this.clubService.getClubHistory(clubId);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -74,34 +71,30 @@ export class MembershipController {
     return this.clubService.getUserRequests(userId);
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard, ClubManagerGuard)
   @Roles('RESPONSABLE', 'ADMIN')
+  @ClubFrom({ param: 'requestId', through: 'clubMembership' })
   @Patch('requests/:requestId/approve')
-  async approveRequest(
-    @Param('requestId') requestId: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.clubService.approveRequest(requestId, req.user);
+  async approveRequest(@Param('requestId') requestId: string) {
+    return this.clubService.approveRequest(requestId);
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard, ClubManagerGuard)
   @Roles('RESPONSABLE', 'ADMIN')
+  @ClubFrom({ param: 'requestId', through: 'clubMembership' })
   @Patch('requests/:requestId/reject')
-  async rejectRequest(
-    @Param('requestId') requestId: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.clubService.rejectRequest(requestId, req.user);
+  async rejectRequest(@Param('requestId') requestId: string) {
+    return this.clubService.rejectRequest(requestId);
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard, ClubManagerGuard)
   @Roles('RESPONSABLE', 'ADMIN')
+  @ClubFrom({ param: 'clubId' })
   @Delete(':clubId/user/:userId')
   async removeMembership(
     @Param('clubId') clubId: string,
     @Param('userId', ParseIntPipe) userId: number,
-    @Request() req: AuthenticatedRequest,
   ) {
-    return this.clubService.removeUserMembership(clubId, userId, req.user);
+    return this.clubService.removeUserMembership(clubId, userId);
   }
 }

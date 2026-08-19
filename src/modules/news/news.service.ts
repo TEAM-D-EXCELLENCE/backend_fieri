@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import type { PaginatedResponse } from '../../common/pagination';
@@ -171,28 +167,13 @@ export class NewsService {
     };
   }
 
-  async deleteNews(id: string, memberId: number) {
+  async deleteNews(id: string) {
     const news = await this.prisma.news.findUnique({
       where: { id },
     });
 
     if (!news) {
       throw new NotFoundException('Article non trouvé');
-    }
-
-    const member = await this.prisma.member.findUnique({
-      where: { id: memberId },
-    });
-
-    if (!member) {
-      throw new ForbiddenException('Utilisateur non trouvé');
-    }
-
-    // L'auteur ou un admin peut supprimer
-    if (news.authorId !== memberId && member.role !== 'ADMIN') {
-      throw new ForbiddenException(
-        "Vous n'avez pas l'autorisation de supprimer cet article.",
-      );
     }
 
     await this.prisma.news.delete({
@@ -217,12 +198,6 @@ export class NewsService {
 
     if (!news) {
       throw new NotFoundException('Article non trouvé');
-    }
-
-    if (news.authorId !== memberId && role !== 'ADMIN') {
-      throw new ForbiddenException(
-        "Vous n'avez pas l'autorisation de modifier cet article.",
-      );
     }
 
     const updated = await this.prisma.news.update({

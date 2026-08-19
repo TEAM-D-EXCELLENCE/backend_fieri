@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -152,12 +148,6 @@ export class OpportunityService {
       throw new NotFoundException('Opportunité non trouvée');
     }
 
-    if (o.authorId !== memberId && userRole !== 'ADMIN') {
-      throw new ForbiddenException(
-        "Vous n'êtes pas autorisé à modifier cette opportunité.",
-      );
-    }
-
     const updated = await this.prisma.opportunity.update({
       where: { id },
       data: {
@@ -177,19 +167,13 @@ export class OpportunityService {
     };
   }
 
-  async deleteOpportunity(id: string, memberId: number, userRole: string) {
+  async deleteOpportunity(id: string) {
     const o = await this.prisma.opportunity.findUnique({
       where: { id },
     });
 
     if (!o) {
       throw new NotFoundException('Opportunité non trouvée');
-    }
-
-    if (o.authorId !== memberId && userRole !== 'ADMIN') {
-      throw new ForbiddenException(
-        "Vous n'êtes pas autorisé à supprimer cette opportunité.",
-      );
     }
 
     await this.prisma.opportunity.delete({

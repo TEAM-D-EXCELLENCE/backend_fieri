@@ -3,7 +3,6 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -34,28 +33,12 @@ export class ChallengeService {
 
   constructor(private prisma: PrismaService) {}
 
-  private async assertClubResponsible(clubId: string, userId: number) {
-    const club = await this.prisma.club.findUnique({ where: { id: clubId } });
-    if (!club) {
-      throw new NotFoundException('Club introuvable.');
-    }
-    const requester = await this.prisma.member.findUnique({
-      where: { id: userId },
-    });
-    if (requester?.role === 'ADMIN') return club;
-    if (club.responsibleId !== userId) {
-      throw new ForbiddenException('Action réservée au responsable du club.');
-    }
-    return club;
-  }
-
   /** Création d'un challenge par le responsable du club. */
   async createChallenge(
     clubId: string,
     dto: CreateChallengeDto,
     creatorId: number,
   ) {
-    await this.assertClubResponsible(clubId, creatorId);
     if (!dto.title?.trim() || !dto.description?.trim() || !dto.rules?.trim()) {
       throw new BadRequestException(
         'Titre, description et consignes (rules) sont requis.',
@@ -167,19 +150,13 @@ export class ChallengeService {
   }
 
   /** Évaluation d'une soumission (note + commentaire) par le jury. */
-  async evaluate(
-    challengeId: string,
-    submissionId: string,
-    dto: EvaluateDto,
-    requesterId: number,
-  ) {
+  async evaluate(challengeId: string, submissionId: string, dto: EvaluateDto) {
     const challenge = await this.prisma.challenge.findUnique({
       where: { id: challengeId },
     });
     if (!challenge) {
       throw new NotFoundException('Challenge introuvable.');
     }
-    await this.assertClubResponsible(challenge.clubId, requesterId);
 
     const submission = await this.prisma.challengeSubmission.findUnique({
       where: { id: submissionId },
@@ -221,18 +198,13 @@ export class ChallengeService {
    * Clôture d'un challenge : désigne les gagnants, leur attribue le badge de
    * récompense configuré et les notifie — le tout dans une transaction.
    */
-  async close(
-    challengeId: string,
-    dto: CloseChallengeDto,
-    requesterId: number,
-  ) {
+  async close(challengeId: string, dto: CloseChallengeDto) {
     const challenge = await this.prisma.challenge.findUnique({
       where: { id: challengeId },
     });
     if (!challenge) {
       throw new NotFoundException('Challenge introuvable.');
     }
-    await this.assertClubResponsible(challenge.clubId, requesterId);
     if (challenge.status === 'CLOSED') {
       throw new BadRequestException('Ce challenge est déjà clôturé.');
     }

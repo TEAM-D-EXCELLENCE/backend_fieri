@@ -15,6 +15,7 @@ import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { OpportunityService } from './opportunity.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+import { ResourceOwner, ResourceOwnerGuard } from '../../auth/guards';
 
 @Controller('opportunities')
 export class OpportunityController {
@@ -55,8 +56,9 @@ export class OpportunityController {
     return this.opportunityService.createOpportunity(req.user.id, data);
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard, ResourceOwnerGuard)
   @Roles('CHERCHEUR', 'ADMIN')
+  @ResourceOwner({ resource: 'opportunity' })
   @Put(':id')
   async updateOpportunity(
     @Request() req: AuthenticatedRequest,
@@ -79,17 +81,14 @@ export class OpportunityController {
     );
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard, ResourceOwnerGuard)
   @Roles('CHERCHEUR', 'ADMIN')
+  @ResourceOwner({ resource: 'opportunity' })
   @Delete(':id')
   async deleteOpportunity(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
   ) {
-    return this.opportunityService.deleteOpportunity(
-      id,
-      req.user.id,
-      req.user.role,
-    );
+    return this.opportunityService.deleteOpportunity(id);
   }
 }

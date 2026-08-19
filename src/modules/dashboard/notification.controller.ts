@@ -10,6 +10,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { DashboardService } from './dashboard.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+import { ResourceOwner, ResourceOwnerGuard } from '../../auth/guards';
 
 @Controller('notifications')
 export class NotificationController {
@@ -21,13 +22,11 @@ export class NotificationController {
     return this.dashboardService.getMyNotifications(req.user.id);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ResourceOwnerGuard)
+  @ResourceOwner({ resource: 'notification', adminBypass: false })
   @Put(':id/read')
-  async markAsRead(
-    @Param('id') id: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.dashboardService.markNotificationAsRead(id, req.user.id);
+  async markAsRead(@Param('id') id: string) {
+    return this.dashboardService.markNotificationAsRead(id);
   }
 
   @UseGuards(AuthGuard('jwt'))

@@ -3,7 +3,6 @@ import {
   Logger,
   NotFoundException,
   ConflictException,
-  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -293,9 +292,11 @@ export class EventService {
       },
     });
 
+    // L'inscription est déjà exigée par `EventRegistrantGuard` ; ce garde-fou
+    // ne couvre que l'incohérence théorique entre les deux lectures.
     if (!registration) {
-      throw new ForbiddenException(
-        'Vous devez être inscrit à cet événement pour accéder au direct.',
+      throw new NotFoundException(
+        'Inscription introuvable pour cet événement.',
       );
     }
 
@@ -305,61 +306,14 @@ export class EventService {
     };
   }
 
-  /**
-   * Vérifie que l'appelant peut gérer l'événement : ADMIN, organisateur,
-   * responsable du club porteur, ou détenteur d'un des postes universitaires
-   * requis (ex: RESP_COMMUNICATION, CHEF_UNIVERSITAIRE) sur l'université.
-   */
-  private async assertEventManager(
-    event: {
-      clubId: string | null;
-      universityId: number | null;
-      organizerId: number | null;
-    },
-    requesterId: number,
-    posts: string[],
-  ) {
-    const requester = await this.prisma.member.findUnique({
-      where: { id: requesterId },
-    });
-    if (requester?.role === 'ADMIN') return;
-    if (event.organizerId && event.organizerId === requesterId) return;
-    if (event.clubId) {
-      const club = await this.prisma.club.findUnique({
-        where: { id: event.clubId },
-        select: { responsibleId: true },
-      });
-      if (club?.responsibleId === requesterId) return;
-    }
-    if (event.universityId) {
-      const post = await this.prisma.universityPost.findUnique({
-        where: { memberId: requesterId },
-      });
-      if (
-        post &&
-        post.universityId === event.universityId &&
-        posts.includes(post.post)
-      ) {
-        return;
-      }
-    }
-    throw new ForbiddenException(
-      "Vous n'avez pas les droits pour gérer cet événement.",
-    );
-  }
-
   /** Liste des inscrits d'un événement (RESP_COMM / CHEF_UNIV / organisateur). */
-  async getRegistrants(eventId: string, requesterId: number) {
+  async getRegistrants(eventId: string) {
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
     });
     if (!event) {
       throw new NotFoundException('Événement non trouvé');
     }
-    await this.assertEventManager(event, requesterId, [
-      'RESP_COMMUNICATION',
-      'CHEF_UNIVERSITAIRE',
-    ]);
 
     const registrations = await this.prisma.eventRegistration.findMany({
       where: { eventId },
@@ -389,11 +343,7 @@ export class EventService {
   }
 
   /** Renseigne les présences effectives (organisateur / responsable / chef). */
-  async markAttendance(
-    eventId: string,
-    memberIds: number[],
-    requesterId: number,
-  ) {
+  async markAttendance(eventId: string, memberIds: number[]) {
     if (!Array.isArray(memberIds) || memberIds.length === 0) {
       throw new BadRequestException(
         'Fournissez la liste des memberIds présents.',
@@ -405,10 +355,6 @@ export class EventService {
     if (!event) {
       throw new NotFoundException('Événement non trouvé');
     }
-    await this.assertEventManager(event, requesterId, [
-      'RESP_COMMUNICATION',
-      'CHEF_UNIVERSITAIRE',
-    ]);
 
     const result = await this.prisma.eventRegistration.updateMany({
       where: { eventId, memberId: { in: memberIds } },
@@ -427,17 +373,13 @@ export class EventService {
    * l'instant — on marque l'événement comme publié et on renvoie les
    * plateformes connectées vers lesquelles la diffusion serait effectuée.
    */
-  async publishSocial(eventId: string, requesterId: number) {
+  async publishSocial(eventId: string) {
     const event = await this.prisma.event.findUnique({
       where: { id: eventId },
     });
     if (!event) {
       throw new NotFoundException('Événement non trouvé');
     }
-    await this.assertEventManager(event, requesterId, [
-      'RESP_COMMUNICATION',
-      'CHEF_UNIVERSITAIRE',
-    ]);
 
     const accounts = event.universityId
       ? await this.prisma.socialAccount.findMany({
