@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { MembersService } from './members.service';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 @Controller('members')
 export class MembersController {
@@ -21,7 +22,7 @@ export class MembersController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
-  async getProfile(@Request() req) {
+  async getProfile(@Request() req: AuthenticatedRequest) {
     const member = await this.membersService.getMemberById(req.user.id);
     if (!member) {
       throw new NotFoundException('Membre non trouvé');
@@ -42,7 +43,12 @@ export class MembersController {
   ) {
     const pageNum = parseInt(page || '1', 10);
     const limitNum = parseInt(limit || '20', 10);
-    return this.membersService.getMembers({ search, role, page: pageNum, limit: limitNum });
+    return this.membersService.getMembers({
+      search,
+      role,
+      page: pageNum,
+      limit: limitNum,
+    });
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -65,7 +71,7 @@ export class MembersController {
   async updateRole(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { role: string },
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.membersService.updateMemberRole(id, body.role, req.user.id);
   }

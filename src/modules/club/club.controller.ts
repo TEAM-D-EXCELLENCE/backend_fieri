@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { ClubService } from './club.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('clubs')
 export class ClubController {
@@ -56,7 +57,7 @@ export class ClubController {
     @Param('id') id: string,
     @Body()
     data: Partial<{ name: string; discipline: string; description: string }>,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.clubService.updateClub(id, data, req.user);
   }
@@ -70,13 +71,19 @@ export class ClubController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post(':id/join')
-  async joinClub(@Param('id') id: string, @Request() req) {
+  async joinClub(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.clubService.joinClubDirect(id, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id/join')
-  async leaveClub(@Param('id') id: string, @Request() req) {
+  async leaveClub(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.clubService.leaveClubDirect(id, req.user.id);
   }
 }

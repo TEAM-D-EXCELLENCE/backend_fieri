@@ -1,6 +1,3 @@
-Loaded Prisma config from prisma.config.ts.
-
-Prisma config detected, skipping environment variable loading.
 -- AlterTable
 ALTER TABLE "Member" ADD COLUMN     "deletionReason" TEXT,
 ADD COLUMN     "deletionRequested" BOOLEAN NOT NULL DEFAULT false,

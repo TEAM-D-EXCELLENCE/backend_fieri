@@ -311,7 +311,11 @@ export class EventService {
    * requis (ex: RESP_COMMUNICATION, CHEF_UNIVERSITAIRE) sur l'université.
    */
   private async assertEventManager(
-    event: { clubId: string | null; universityId: number | null; organizerId: number | null },
+    event: {
+      clubId: string | null;
+      universityId: number | null;
+      organizerId: number | null;
+    },
     requesterId: number,
     posts: string[],
   ) {
@@ -471,7 +475,10 @@ export class EventService {
 
   // ── Génération d'invitation agenda (.ics) ─────────────────────────
   private formatIcsDate(date: Date): string {
-    return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+    return date
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}Z$/, 'Z');
   }
 
   private escapeIcs(text: string): string {
@@ -490,8 +497,7 @@ export class EventService {
     endDate: Date | null;
   }): string {
     const start = event.date;
-    const end =
-      event.endDate ?? new Date(start.getTime() + 2 * 60 * 60 * 1000); // +2h par défaut
+    const end = event.endDate ?? new Date(start.getTime() + 2 * 60 * 60 * 1000); // +2h par défaut
     return [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',

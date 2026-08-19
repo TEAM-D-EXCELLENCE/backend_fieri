@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 export interface RequestDeletionDto {
   reason?: string;
@@ -141,9 +142,7 @@ export class GovernanceService {
     requesterId: number,
   ) {
     if (typeof dto.approve !== 'boolean') {
-      throw new BadRequestException(
-        'Le champ "approve" (booléen) est requis.',
-      );
+      throw new BadRequestException('Le champ "approve" (booléen) est requis.');
     }
 
     const target = await this.prisma.member.findUnique({
@@ -350,7 +349,10 @@ export class GovernanceService {
    * Récupère la liste des figures emblématiques (isEmblematic = true).
    */
   async listEmblematicMembers(universityId?: number) {
-    const where: any = { isEmblematic: true, isActive: true };
+    const where: Prisma.MemberWhereInput = {
+      isEmblematic: true,
+      isActive: true,
+    };
     if (universityId) {
       where.branch = { universityId };
     }
@@ -367,7 +369,10 @@ export class GovernanceService {
         avatarUrl: true,
         isEmblematic: true,
         branch: {
-          select: { name: true, university: { select: { id: true, name: true } } },
+          select: {
+            name: true,
+            university: { select: { id: true, name: true } },
+          },
         },
       },
       orderBy: { lastname: 'asc' },

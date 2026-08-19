@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { EventService } from './event.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('events')
 export class EventController {
@@ -64,7 +65,7 @@ export class EventController {
       clubId?: string;
       universityId?: number;
     },
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.eventService.createEvent(data, req.user.id);
   }
@@ -87,26 +88,38 @@ export class EventController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post(':id/register')
-  async register(@Param('id') id: string, @Request() req) {
+  async register(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.eventService.registerToEvent(id, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id/register')
-  async deregister(@Param('id') id: string, @Request() req) {
+  async deregister(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.eventService.deregisterFromEvent(id, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get(':id/stream')
-  async getStream(@Param('id') id: string, @Request() req) {
+  async getStream(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.eventService.getEventStream(id, req.user.id);
   }
 
   /** Liste des inscrits — RESP_COMM / CHEF_UNIV / organisateur. */
   @UseGuards(AuthGuard('jwt'))
   @Get(':id/registrants')
-  async registrants(@Param('id') id: string, @Request() req) {
+  async registrants(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.eventService.getRegistrants(id, req.user.id);
   }
 
@@ -116,7 +129,7 @@ export class EventController {
   async markAttendance(
     @Param('id') id: string,
     @Body() body: { memberIds: number[] },
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.eventService.markAttendance(id, body.memberIds, req.user.id);
   }
@@ -124,7 +137,10 @@ export class EventController {
   /** Publication réseaux sociaux (OAuth mockée) — RESP_COMM / CHEF_UNIV. */
   @UseGuards(AuthGuard('jwt'))
   @Post(':id/publish-social')
-  async publishSocial(@Param('id') id: string, @Request() req) {
+  async publishSocial(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.eventService.publishSocial(id, req.user.id);
   }
 }

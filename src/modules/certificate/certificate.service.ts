@@ -123,15 +123,18 @@ export class CertificateService {
     // Auto-fallback pour la signature si non renseignée au profil
     let currentSignatureUrl = issuer.signatureUrl;
     if (!currentSignatureUrl) {
-      currentSignatureUrl = 'https://ui-avatars.com/api/?name=Signature+Officielle&background=0D8ABC&color=fff';
-      await this.prisma.member.update({
-        where: { id: issuerId },
-        data: { signatureUrl: currentSignatureUrl },
-      }).catch(() => null);
+      currentSignatureUrl =
+        'https://ui-avatars.com/api/?name=Signature+Officielle&background=0D8ABC&color=fff';
+      await this.prisma.member
+        .update({
+          where: { id: issuerId },
+          data: { signatureUrl: currentSignatureUrl },
+        })
+        .catch(() => null);
     }
 
     const signatureImage = currentSignatureUrl
-      ? (await this.storage.readByUrl(currentSignatureUrl)) ?? undefined
+      ? ((await this.storage.readByUrl(currentSignatureUrl)) ?? undefined)
       : undefined;
     if (!signatureImage) {
       this.logger.warn(

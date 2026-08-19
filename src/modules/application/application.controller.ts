@@ -12,6 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { ApplicationService } from './application.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('applications')
 export class ApplicationController {
@@ -20,7 +21,7 @@ export class ApplicationController {
   @UseGuards(AuthGuard('jwt'))
   @Post()
   async submitApplication(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body() data: { opportunityId: string; coverLetter: string; cvUrl: string },
   ) {
     return this.applicationService.submitApplication(req.user.id, data);
@@ -28,7 +29,7 @@ export class ApplicationController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
-  async getMyApplications(@Request() req) {
+  async getMyApplications(@Request() req: AuthenticatedRequest) {
     return this.applicationService.getMyApplications(req.user.id);
   }
 
@@ -36,7 +37,7 @@ export class ApplicationController {
   @Get('check/:opportunityId')
   async checkIfApplied(
     @Param('opportunityId') opportunityId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.applicationService.checkIfApplied(req.user.id, opportunityId);
   }

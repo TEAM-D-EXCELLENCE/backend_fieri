@@ -192,7 +192,9 @@ export class ChallengeService {
     if (dto.grade !== undefined && dto.grade !== null) {
       grade = Number(dto.grade);
       if (!Number.isFinite(grade) || grade < 0) {
-        throw new BadRequestException('Note invalide (nombre positif attendu).');
+        throw new BadRequestException(
+          'Note invalide (nombre positif attendu).',
+        );
       }
     }
 

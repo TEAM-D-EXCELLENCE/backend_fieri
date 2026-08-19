@@ -16,6 +16,10 @@ import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { NewsService } from './news.service';
+import type {
+  AuthenticatedRequest,
+  OptionalAuthRequest,
+} from '../../auth/authenticated-request';
 
 @Controller('news')
 export class NewsController {
@@ -24,7 +28,7 @@ export class NewsController {
   @UseGuards(OptionalJwtAuthGuard)
   @Get()
   async getNews(
-    @Request() req,
+    @Request() req: OptionalAuthRequest,
     @Query('includePending') includePending?: string,
     @Query('featured') featured?: string,
     @Query('page') page?: string,
@@ -35,7 +39,13 @@ export class NewsController {
     const isFeatured = featured === 'true';
     const pageNum = parseInt(page || '1', 10);
     const limitNum = parseInt(limit || '20', 10);
-    return this.newsService.getNews(isIncludePending, memberId, isFeatured, pageNum, limitNum);
+    return this.newsService.getNews(
+      isIncludePending,
+      memberId,
+      isFeatured,
+      pageNum,
+      limitNum,
+    );
   }
 
   @Get(':id')
@@ -47,7 +57,7 @@ export class NewsController {
   @Roles('CHERCHEUR', 'ADMIN')
   @Post()
   async createNews(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body() data: { title: string; content: string; category: string },
   ) {
     return this.newsService.createNews(req.user.id, data);
@@ -62,7 +72,10 @@ export class NewsController {
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
-  async deleteNews(@Param('id') id: string, @Request() req) {
+  async deleteNews(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.newsService.deleteNews(id, req.user.id);
   }
 
@@ -71,7 +84,7 @@ export class NewsController {
   @Put(':id')
   async updateNews(
     @Param('id') id: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body() data: Partial<{ title: string; content: string; category: string }>,
   ) {
     return this.newsService.updateNews(id, req.user.id, req.user.role, data);

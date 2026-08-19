@@ -16,6 +16,7 @@ import { UniversityPostGuard } from '../../auth/university-post.guard';
 import { UniversityPosts } from '../../auth/university-post.decorator';
 import { CertificateService } from './certificate.service';
 import type { IssueCertificateDto } from './certificate.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller()
 export class CertificateController {
@@ -27,7 +28,7 @@ export class CertificateController {
   @UseInterceptors(FileInterceptor('signature'))
   async uploadSignature(
     @UploadedFile() file: Express.Multer.File,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.certificateService.uploadSignature(req.user.id, file);
   }
@@ -39,7 +40,7 @@ export class CertificateController {
   async issue(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: IssueCertificateDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.certificateService.issueCertificate(id, dto, req.user.id);
   }

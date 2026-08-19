@@ -44,6 +44,25 @@ const SUCCESS_EVENTS = [
   'payment_success',
 ];
 
+/**
+ * Corps utile d'un webhook Genius Pay. Tous les champs sont optionnels : le
+ * format exact dépend du processeur et n'est pas garanti contractuellement,
+ * on ne fait donc que du rapprochement défensif.
+ */
+interface GeniusPayWebhookPayload {
+  reference?: string;
+  id?: string;
+  session_id?: string;
+  metadata?: { supportOfferId?: string };
+}
+
+/** Enveloppe complète du webhook : le payload peut être imbriqué ou à plat. */
+interface GeniusPayWebhookEvent extends GeniusPayWebhookPayload {
+  type?: string;
+  event?: string;
+  data?: GeniusPayWebhookPayload & { object?: GeniusPayWebhookPayload };
+}
+
 @Injectable()
 export class SupportService {
   private readonly logger = new Logger(SupportService.name);
@@ -61,10 +80,7 @@ export class SupportService {
    * Crée une offre de soutien financière puis une session de paiement hébergée.
    * Renvoie l'URL vers laquelle le frontend redirige le donateur.
    */
-  async initiateFinancial(
-    dto: InitiateFinancialDto,
-    memberId: number | null,
-  ) {
+  async initiateFinancial(dto: InitiateFinancialDto, memberId: number | null) {
     const universityId = Number(dto.universityId);
     if (!Number.isInteger(universityId)) {
       throw new BadRequestException('universityId invalide.');
@@ -147,23 +163,25 @@ export class SupportService {
       throw new UnauthorizedException('Signature de webhook invalide.');
     }
 
-    let event: Record<string, any>;
+    let event: GeniusPayWebhookEvent;
     try {
-      event = JSON.parse(rawBody.toString('utf8'));
+      event = JSON.parse(rawBody.toString('utf8')) as GeniusPayWebhookEvent;
     } catch {
       throw new BadRequestException('Payload JSON invalide.');
     }
 
-    const type: string = event.type ?? event.event ?? '';
+    const type = event.type ?? event.event ?? '';
     if (!SUCCESS_EVENTS.includes(type)) {
       this.logger.log(`Webhook ignoré (type non pertinent : "${type}").`);
       return { received: true, ignored: true };
     }
 
-    const payload = event.data?.object ?? event.data ?? event;
+    const payload: GeniusPayWebhookPayload =
+      event.data?.object ?? event.data ?? event;
     const reference: string | undefined =
       payload.reference ?? payload.id ?? payload.session_id;
-    const metadataOfferId: string | undefined = payload.metadata?.supportOfferId;
+    const metadataOfferId: string | undefined =
+      payload.metadata?.supportOfferId;
 
     const orClauses: Array<{ paymentReference: string } | { id: string }> = [];
     if (reference) orClauses.push({ paymentReference: String(reference) });
@@ -187,7 +205,11 @@ export class SupportService {
 
     // Idempotence : un webhook peut être rejoué par le processeur.
     if (offer.status === 'VALIDATED') {
-      return { received: true, alreadyProcessed: true, supportOfferId: offer.id };
+      return {
+        received: true,
+        alreadyProcessed: true,
+        supportOfferId: offer.id,
+      };
     }
     if (!offer.universityId || !offer.amount) {
       this.logger.error(

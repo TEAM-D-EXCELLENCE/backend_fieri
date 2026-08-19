@@ -15,6 +15,7 @@ import type {
   EvaluateDto,
   CloseChallengeDto,
 } from './challenge.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller()
 export class ChallengeController {
@@ -26,7 +27,7 @@ export class ChallengeController {
   async create(
     @Param('id') clubId: string,
     @Body() dto: CreateChallengeDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.challengeService.createChallenge(clubId, dto, req.user.id);
   }
@@ -49,7 +50,7 @@ export class ChallengeController {
   async submit(
     @Param('id') id: string,
     @Body() dto: SubmitDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.challengeService.submit(id, dto, req.user.id);
   }
@@ -61,7 +62,7 @@ export class ChallengeController {
     @Param('id') id: string,
     @Param('submissionId') submissionId: string,
     @Body() dto: EvaluateDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.challengeService.evaluate(id, submissionId, dto, req.user.id);
   }
@@ -72,7 +73,7 @@ export class ChallengeController {
   async close(
     @Param('id') id: string,
     @Body() dto: CloseChallengeDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.challengeService.close(id, dto, req.user.id);
   }

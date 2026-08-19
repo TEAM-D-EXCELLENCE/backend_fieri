@@ -4,6 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { PaginatedResponse } from '../../common/pagination';
 
 @Injectable()
 export class WorkshopService {
@@ -42,7 +43,7 @@ export class WorkshopService {
       };
     });
 
-    const result: any = {
+    const result: PaginatedResponse<(typeof data)[number]> = {
       success: true,
       data,
     };

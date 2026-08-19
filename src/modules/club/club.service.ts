@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import type { PaginatedResponse } from '../../common/pagination';
 
 @Injectable()
 export class ClubService {
@@ -49,7 +50,9 @@ export class ClubService {
           memberships: {
             where: { status: 'APPROVED' },
           },
-          responsible: { select: { id: true, firstname: true, lastname: true } },
+          responsible: {
+            select: { id: true, firstname: true, lastname: true },
+          },
         },
       }),
       this.prisma.club.count(),
@@ -70,7 +73,7 @@ export class ClubService {
         : null,
     }));
 
-    const result: any = {
+    const result: PaginatedResponse<(typeof formattedClubs)[number]> = {
       success: true,
       data: formattedClubs,
     };

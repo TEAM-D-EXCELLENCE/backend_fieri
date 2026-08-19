@@ -4,6 +4,9 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+import type { PaginatedResponse } from '../../common/pagination';
+import { parseProjectTeam } from '../../common/project-team';
 
 @Injectable()
 export class ProjectService {
@@ -17,7 +20,7 @@ export class ProjectService {
     page?: number,
     limit?: number,
   ) {
-    const whereClause: any = {};
+    const whereClause: Prisma.ProjectWhereInput = {};
 
     if (clubId) {
       whereClause.clubId = clubId;
@@ -67,7 +70,7 @@ export class ProjectService {
       technologies: p.technologies,
     }));
 
-    const result: any = {
+    const result: PaginatedResponse<(typeof formattedProjects)[number]> = {
       success: true,
       data: formattedProjects,
     };
@@ -93,17 +96,7 @@ export class ProjectService {
       throw new NotFoundException('Projet non trouvé');
     }
 
-    // team est un Json. On le caste en any[] ou array pour la réponse
-    let teamArray: any[] = [];
-    try {
-      if (project.team && typeof project.team === 'string') {
-        teamArray = JSON.parse(project.team);
-      } else if (Array.isArray(project.team)) {
-        teamArray = project.team;
-      }
-    } catch (e) {
-      teamArray = [];
-    }
+    const teamArray = parseProjectTeam(project.team);
 
     return {
       success: true,
@@ -132,7 +125,9 @@ export class ProjectService {
     },
   ) {
     if (data.clubId) {
-      const club = await this.prisma.club.findUnique({ where: { id: data.clubId } });
+      const club = await this.prisma.club.findUnique({
+        where: { id: data.clubId },
+      });
       if (!club) {
         throw new NotFoundException('Club introuvable.');
       }

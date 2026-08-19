@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PublicationService {
@@ -12,7 +13,7 @@ export class PublicationService {
     page: number;
     limit: number;
   }) {
-    const where: any = { status: 'PUBLISHED' };
+    const where: Prisma.PublicationWhereInput = { status: 'PUBLISHED' };
 
     if (params.authorId) {
       where.authorId = params.authorId;
@@ -103,7 +104,13 @@ export class PublicationService {
 
   async createPublication(
     authorId: number,
-    data: { title: string; content: string; category: string; projectId?: string; clubId?: string },
+    data: {
+      title: string;
+      content: string;
+      category: string;
+      projectId?: string;
+      clubId?: string;
+    },
   ) {
     const publication = await this.prisma.publication.create({
       data: {

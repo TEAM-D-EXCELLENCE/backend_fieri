@@ -16,6 +16,7 @@ import { ClubService } from './club.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('memberships')
 export class MembershipController {
@@ -26,7 +27,10 @@ export class MembershipController {
 
   @UseGuards(AuthGuard('jwt'))
   @Post('requests')
-  async createRequest(@Request() req, @Body('clubId') clubId: string) {
+  async createRequest(
+    @Request() req: AuthenticatedRequest,
+    @Body('clubId') clubId: string,
+  ) {
     // Note: the spec body contains { clubId, user: { id } } but we can safely use the authenticated user's ID
     return this.clubService.createMembershipRequest(clubId, req.user.id);
   }
@@ -34,24 +38,37 @@ export class MembershipController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('RESPONSABLE', 'ADMIN')
   @Get('requests/pending/:clubId')
-  async getPendingRequests(@Param('clubId') clubId: string, @Request() req) {
+  async getPendingRequests(
+    @Param('clubId') clubId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.clubService.getPendingRequestsForClub(clubId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('RESPONSABLE', 'ADMIN')
   @Get('requests/club/:clubId')
-  async getClubHistory(@Param('clubId') clubId: string, @Request() req) {
+  async getClubHistory(
+    @Param('clubId') clubId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.clubService.getClubHistory(clubId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get('requests/user/:userId')
-  async getUserRequests(@Request() req, @Param('userId', ParseIntPipe) userId: number) {
+  async getUserRequests(
+    @Request() req: AuthenticatedRequest,
+    @Param('userId', ParseIntPipe) userId: number,
+  ) {
     if (req.user.id !== userId) {
-      const member = await this.prisma.member.findUnique({ where: { id: req.user.id } });
+      const member = await this.prisma.member.findUnique({
+        where: { id: req.user.id },
+      });
       if (!member || member.role !== 'ADMIN') {
-        throw new ForbiddenException("Vous ne pouvez consulter que vos propres demandes.");
+        throw new ForbiddenException(
+          'Vous ne pouvez consulter que vos propres demandes.',
+        );
       }
     }
     return this.clubService.getUserRequests(userId);
@@ -60,14 +77,20 @@ export class MembershipController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('RESPONSABLE', 'ADMIN')
   @Patch('requests/:requestId/approve')
-  async approveRequest(@Param('requestId') requestId: string, @Request() req) {
+  async approveRequest(
+    @Param('requestId') requestId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.clubService.approveRequest(requestId, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('RESPONSABLE', 'ADMIN')
   @Patch('requests/:requestId/reject')
-  async rejectRequest(@Param('requestId') requestId: string, @Request() req) {
+  async rejectRequest(
+    @Param('requestId') requestId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.clubService.rejectRequest(requestId, req.user);
   }
 
@@ -77,7 +100,7 @@ export class MembershipController {
   async removeMembership(
     @Param('clubId') clubId: string,
     @Param('userId', ParseIntPipe) userId: number,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.clubService.removeUserMembership(clubId, userId, req.user);
   }
