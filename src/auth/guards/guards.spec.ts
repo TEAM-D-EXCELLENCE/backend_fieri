@@ -7,6 +7,7 @@ import { EventManagerGuard } from './event-manager.guard';
 import { MemberGovernanceGuard } from './member-governance.guard';
 import { UniversityChiefGuard } from './university-chief.guard';
 import { AssignedActivityGuard } from './assigned-activity.guard';
+import { UniversityPostGuard } from '../university-post.guard';
 import type { AuthUser } from '../authenticated-request';
 
 const ADMIN: AuthUser = {
@@ -382,5 +383,80 @@ describe('AssignedActivityGuard', () => {
     await expect(
       new AssignedActivityGuard(p).canActivate(ctx(MEMBRE, { id: 'a1' })),
     ).rejects.toThrow(ForbiddenException);
+  });
+});
+
+describe('UniversityPostGuard', () => {
+  const CHEF: AuthUser = {
+    id: 12,
+    firstname: 'C',
+    lastname: 'U',
+    email: 'c@u.fr',
+    role: 'ETUDIANT',
+  };
+
+  /** Prisma minimal : le membre existe, avec le poste et l'université donnés. */
+  const prisma = (post: string | null, universityId = 7) =>
+    ({
+      member: {
+        findUnique: jest.fn().mockResolvedValue({ id: 12, role: 'ETUDIANT' }),
+      },
+      universityPost: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(post === null ? null : { post, universityId }),
+      },
+    }) as never;
+
+  const guard = (requis: string[], post: string | null, universityId = 7) =>
+    new UniversityPostGuard(reflector(requis), prisma(post, universityId));
+
+  it('laisse passer le Chef Universitaire sur une route de lecture partagée', async () => {
+    await expect(
+      guard(
+        ['SECRETAIRE', 'CHEF_UNIVERSITAIRE'],
+        'CHEF_UNIVERSITAIRE',
+      ).canActivate(ctx(CHEF, { id: '7' })),
+    ).resolves.toBe(true);
+  });
+
+  it('laisse passer la Secrétaire sur cette même route', async () => {
+    await expect(
+      guard(['SECRETAIRE', 'CHEF_UNIVERSITAIRE'], 'SECRETAIRE').canActivate(
+        ctx(CHEF, { id: '7' }),
+      ),
+    ).resolves.toBe(true);
+  });
+
+  it('refuse le Chef Universitaire sur un acte réservé à la Secrétaire', async () => {
+    await expect(
+      guard(['SECRETAIRE'], 'CHEF_UNIVERSITAIRE').canActivate(
+        ctx(CHEF, { id: '7' }),
+      ),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it("refuse un Chef Universitaire d'une autre université", async () => {
+    await expect(
+      guard(
+        ['SECRETAIRE', 'CHEF_UNIVERSITAIRE'],
+        'CHEF_UNIVERSITAIRE',
+        99,
+      ).canActivate(ctx(CHEF, { id: '7' })),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('laisse passer un ADMIN global sans poste universitaire', async () => {
+    const p = {
+      member: {
+        findUnique: jest.fn().mockResolvedValue({ id: 1, role: 'ADMIN' }),
+      },
+      universityPost: { findUnique: jest.fn().mockResolvedValue(null) },
+    } as never;
+    await expect(
+      new UniversityPostGuard(reflector(['SECRETAIRE']), p).canActivate(
+        ctx(ADMIN, { id: '7' }),
+      ),
+    ).resolves.toBe(true);
   });
 });

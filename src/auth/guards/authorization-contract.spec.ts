@@ -115,3 +115,46 @@ describe('Contrat des autorisations déclaratives', () => {
     expect(hits).toEqual([]);
   });
 });
+
+/**
+ * Séparation lecture / acte à l'échelle d'une université.
+ *
+ * Le Chef Universitaire supervise : il lit ce que la Secrétaire consolide et
+ * ce que le Trésorier tient. Il n'accomplit pas leurs actes à leur place.
+ * Ce test fige ce partage route par route, pour qu'un élargissement — ou un
+ * rétrécissement — soit un choix explicite et non un effet de bord.
+ */
+describe('Partage des postes universitaires', () => {
+  const ATTENDU: Record<string, string[]> = {
+    // Lectures partagées avec le Chef Universitaire.
+    'universities/:id/activity-reports': ['SECRETAIRE', 'CHEF_UNIVERSITAIRE'],
+    'universities/:id/census-history': ['SECRETAIRE', 'CHEF_UNIVERSITAIRE'],
+    ':id/treasury': ['TRESORIER', 'CHEF_UNIVERSITAIRE'],
+    // Actes réservés au titulaire du poste.
+    'universities/:id/validate-census/:censusId': ['SECRETAIRE'],
+    ':id/treasury/transactions': ['TRESORIER'],
+  };
+
+  it.each(Object.entries(ATTENDU))(
+    'la route %s exige exactement %s',
+    (route, postes) => {
+      const trouve: string[][] = [];
+      for (const file of controllers) {
+        for (const block of routeBlocks(file)) {
+          if (!block.text.includes(`'${route}'`)) continue;
+          const m = /@UniversityPosts\(([^)]*)\)/.exec(block.text);
+          trouve.push(
+            m
+              ? m[1]
+                  .split(',')
+                  .map((p) => p.trim().replace(/^'|'$/g, ''))
+                  .filter(Boolean)
+              : [],
+          );
+        }
+      }
+      expect(trouve).toHaveLength(1);
+      expect(trouve[0].sort()).toEqual([...postes].sort());
+    },
+  );
+});

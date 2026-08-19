@@ -72,9 +72,13 @@ export class ClubSpaceController {
     return this.clubSpaceService.getMyDashboard(req.user.id);
   }
 
-  /** Historique des recensements d'une université (Secrétaire / ADMIN). */
+  /**
+   * Historique des recensements d'une université.
+   * Lecture : Secrétaire (qui consolide), Chef Universitaire (qui supervise)
+   * et ADMIN — même partage que le grand livre de trésorerie.
+   */
   @UseGuards(AuthGuard('jwt'), UniversityPostGuard)
-  @UniversityPosts('SECRETAIRE')
+  @UniversityPosts('SECRETAIRE', 'CHEF_UNIVERSITAIRE')
   @Get('universities/:id/census-history')
   async censusHistory(@Param('id', ParseIntPipe) id: number) {
     return this.clubSpaceService.getCensusHistory(id);
@@ -112,9 +116,14 @@ export class ClubSpaceController {
     return this.clubSpaceService.listClubReports(id);
   }
 
-  /** Tous les rapports d'activité d'une université (Secrétaire / ADMIN). */
+  /**
+   * Tous les rapports d'activité d'une université.
+   * Lecture : Secrétaire (destinataire des dépôts), Chef Universitaire (à qui
+   * la Secrétaire les transmet) et ADMIN. La soumission reste au Responsable
+   * de Club, et la validation d'un recensement à la Secrétaire seule.
+   */
   @UseGuards(AuthGuard('jwt'), UniversityPostGuard)
-  @UniversityPosts('SECRETAIRE')
+  @UniversityPosts('SECRETAIRE', 'CHEF_UNIVERSITAIRE')
   @Get('universities/:id/activity-reports')
   async universityReports(@Param('id', ParseIntPipe) id: number) {
     return this.clubSpaceService.listUniversityReports(id);
