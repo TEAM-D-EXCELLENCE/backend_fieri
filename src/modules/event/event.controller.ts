@@ -15,6 +15,11 @@ import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { EventService } from './event.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+import {
+  EventManagerGuard,
+  EventPosts,
+  EventRegistrantGuard,
+} from '../../auth/guards';
 
 @Controller('events')
 export class EventController {
@@ -104,7 +109,7 @@ export class EventController {
     return this.eventService.deregisterFromEvent(id, req.user.id);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), EventRegistrantGuard)
   @Get(':id/stream')
   async getStream(
     @Param('id') id: string,
@@ -114,33 +119,29 @@ export class EventController {
   }
 
   /** Liste des inscrits — RESP_COMM / CHEF_UNIV / organisateur. */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), EventManagerGuard)
+  @EventPosts('RESP_COMMUNICATION', 'CHEF_UNIVERSITAIRE')
   @Get(':id/registrants')
-  async registrants(
-    @Param('id') id: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.eventService.getRegistrants(id, req.user.id);
+  async registrants(@Param('id') id: string) {
+    return this.eventService.getRegistrants(id);
   }
 
   /** Marque les présences effectives — organisateur / responsable / chef. */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), EventManagerGuard)
+  @EventPosts('RESP_COMMUNICATION', 'CHEF_UNIVERSITAIRE')
   @Post(':id/mark-attendance')
   async markAttendance(
     @Param('id') id: string,
     @Body() body: { memberIds: number[] },
-    @Request() req: AuthenticatedRequest,
   ) {
-    return this.eventService.markAttendance(id, body.memberIds, req.user.id);
+    return this.eventService.markAttendance(id, body.memberIds);
   }
 
   /** Publication réseaux sociaux (OAuth mockée) — RESP_COMM / CHEF_UNIV. */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), EventManagerGuard)
+  @EventPosts('RESP_COMMUNICATION', 'CHEF_UNIVERSITAIRE')
   @Post(':id/publish-social')
-  async publishSocial(
-    @Param('id') id: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.eventService.publishSocial(id, req.user.id);
+  async publishSocial(@Param('id') id: string) {
+    return this.eventService.publishSocial(id);
   }
 }

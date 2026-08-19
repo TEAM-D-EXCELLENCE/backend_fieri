@@ -12,6 +12,11 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { UniversityPostGuard } from '../../auth/university-post.guard';
 import { UniversityPosts } from '../../auth/university-post.decorator';
+import {
+  AssignedActivityGuard,
+  ClubFrom,
+  ClubManagerGuard,
+} from '../../auth/guards';
 import { ClubSpaceService } from './club-space.service';
 import type { CreateActivityDto, SubmitReportDto } from './club-space.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
@@ -21,17 +26,16 @@ export class ClubSpaceController {
   constructor(private readonly clubSpaceService: ClubSpaceService) {}
 
   /** Liste des membres actifs d'un club (Responsable / Secrétaire / ADMIN). */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ClubManagerGuard)
+  @ClubFrom({ param: 'id', posts: ['SECRETAIRE'] })
   @Get('clubs/:id/members-list')
-  async membersList(
-    @Param('id') id: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.clubSpaceService.getMembersList(id, req.user.id);
+  async membersList(@Param('id') id: string) {
+    return this.clubSpaceService.getMembersList(id);
   }
 
   /** Soumission mensuelle des effectifs à la Secrétaire (Responsable / ADMIN). */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ClubManagerGuard)
+  @ClubFrom({ param: 'id' })
   @Post('clubs/:id/submit-census')
   async submitCensus(
     @Param('id') id: string,
@@ -41,29 +45,24 @@ export class ClubSpaceController {
   }
 
   /** Création d'une activité assignée (Responsable / ADMIN). */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ClubManagerGuard)
+  @ClubFrom({ param: 'id' })
   @Post('clubs/:id/assigned-activities')
   async createActivity(
     @Param('id') id: string,
     @Body() dto: CreateActivityDto,
-    @Request() req: AuthenticatedRequest,
   ) {
-    return this.clubSpaceService.createAssignedActivity(id, dto, req.user.id);
+    return this.clubSpaceService.createAssignedActivity(id, dto);
   }
 
   /** Mise à jour du statut d'une activité (assigné / responsable / ADMIN). */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), AssignedActivityGuard)
   @Patch('assigned-activities/:id')
   async updateActivity(
     @Param('id') id: string,
     @Body() body: { status: string },
-    @Request() req: AuthenticatedRequest,
   ) {
-    return this.clubSpaceService.updateActivityStatus(
-      id,
-      body.status,
-      req.user.id,
-    );
+    return this.clubSpaceService.updateActivityStatus(id, body.status);
   }
 
   /** Tableau de bord du membre : activités assignées + projets actifs. */
@@ -94,7 +93,8 @@ export class ClubSpaceController {
   }
 
   /** Soumission du rapport mensuel d'activité (Responsable / ADMIN). */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ClubManagerGuard)
+  @ClubFrom({ param: 'id' })
   @Post('clubs/:id/activity-reports')
   async submitReport(
     @Param('id') id: string,
@@ -105,13 +105,11 @@ export class ClubSpaceController {
   }
 
   /** Rapports d'activité d'un club (Responsable / Secrétaire / ADMIN). */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ClubManagerGuard)
+  @ClubFrom({ param: 'id', posts: ['SECRETAIRE'] })
   @Get('clubs/:id/activity-reports')
-  async clubReports(
-    @Param('id') id: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.clubSpaceService.listClubReports(id, req.user.id);
+  async clubReports(@Param('id') id: string) {
+    return this.clubSpaceService.listClubReports(id);
   }
 
   /** Tous les rapports d'activité d'une université (Secrétaire / ADMIN). */

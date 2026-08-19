@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import type { PaginatedResponse } from '../../common/pagination';
@@ -124,30 +120,6 @@ export class ProjectService {
       clubId?: string;
     },
   ) {
-    if (data.clubId) {
-      const club = await this.prisma.club.findUnique({
-        where: { id: data.clubId },
-      });
-      if (!club) {
-        throw new NotFoundException('Club introuvable.');
-      }
-      const requester = await this.prisma.member.findUnique({
-        where: { id: memberId },
-      });
-      const isAdmin = requester?.role === 'ADMIN';
-      const isResponsible = club.responsibleId === memberId;
-      const membership = await this.prisma.clubMembership.findUnique({
-        where: { clubId_memberId: { clubId: data.clubId, memberId } },
-      });
-      const isMember = membership?.status === 'APPROVED';
-
-      if (!isAdmin && !isResponsible && !isMember) {
-        throw new ForbiddenException(
-          "Vous n'êtes pas autorisé à créer un projet rattaché à ce club.",
-        );
-      }
-    }
-
     const project = await this.prisma.project.create({
       data: {
         id: `proj-${Date.now()}`,
@@ -191,24 +163,6 @@ export class ProjectService {
       throw new NotFoundException('Projet non trouvé');
     }
 
-    const isOwner = project.ownerId === memberId;
-    const isAdmin = userRole === 'ADMIN';
-    let isClubResponsible = false;
-    if (project.clubId) {
-      const club = await this.prisma.club.findUnique({
-        where: { id: project.clubId },
-      });
-      if (club && club.responsibleId === memberId) {
-        isClubResponsible = true;
-      }
-    }
-
-    if (!isOwner && !isAdmin && !isClubResponsible) {
-      throw new ForbiddenException(
-        "Vous n'êtes pas autorisé à modifier ce projet.",
-      );
-    }
-
     const updated = await this.prisma.project.update({
       where: { id },
       data: {
@@ -229,31 +183,13 @@ export class ProjectService {
     };
   }
 
-  async deleteProject(id: string, memberId: number, userRole: string) {
+  async deleteProject(id: string) {
     const project = await this.prisma.project.findUnique({
       where: { id },
     });
 
     if (!project) {
       throw new NotFoundException('Projet non trouvé');
-    }
-
-    const isOwner = project.ownerId === memberId;
-    const isAdmin = userRole === 'ADMIN';
-    let isClubResponsible = false;
-    if (project.clubId) {
-      const club = await this.prisma.club.findUnique({
-        where: { id: project.clubId },
-      });
-      if (club && club.responsibleId === memberId) {
-        isClubResponsible = true;
-      }
-    }
-
-    if (!isOwner && !isAdmin && !isClubResponsible) {
-      throw new ForbiddenException(
-        "Vous n'êtes pas autorisé à supprimer ce projet.",
-      );
     }
 
     await this.prisma.project.delete({

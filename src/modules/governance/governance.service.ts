@@ -3,8 +3,6 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
-  ForbiddenException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -53,31 +51,6 @@ export class GovernanceService {
       throw new NotFoundException('Membre introuvable.');
     }
 
-    const requester = await this.prisma.member.findUnique({
-      where: { id: requesterId },
-    });
-    if (!requester) {
-      throw new UnauthorizedException('Demandeur introuvable.');
-    }
-
-    // Autorisation : ADMIN, ou responsable d'un club auquel appartient le membre.
-    let authorized = requester.role === 'ADMIN';
-    if (!authorized) {
-      const targetClubIds = target.clubMemberships.map((m) => m.clubId);
-      if (targetClubIds.length > 0) {
-        const club = await this.prisma.club.findFirst({
-          where: { responsibleId: requesterId, id: { in: targetClubIds } },
-          select: { id: true },
-        });
-        authorized = !!club;
-      }
-    }
-    if (!authorized) {
-      throw new ForbiddenException(
-        "Vous devez être responsable d'un club de ce membre (ou administrateur).",
-      );
-    }
-
     if (target.deletionRequested) {
       throw new BadRequestException(
         'Une demande d’exclusion est déjà en cours pour ce membre.',
@@ -93,6 +66,13 @@ export class GovernanceService {
       },
     });
 
+    // Identité du demandeur, pour le libellé de la notification uniquement :
+    // l'autorisation est portée en amont par `MemberGovernanceGuard`.
+    const requester = await this.prisma.member.findUnique({
+      where: { id: requesterId },
+      select: { firstname: true, lastname: true },
+    });
+
     // Notifie le Chef Universitaire du membre.
     const universityId = target.branch?.universityId;
     if (universityId) {
@@ -106,7 +86,8 @@ export class GovernanceService {
             memberId: chef.memberId,
             title: 'Demande d’exclusion de membre',
             message:
-              `${requester.firstname} ${requester.lastname} demande l’exclusion de ` +
+              `${requester?.firstname ?? 'Un responsable'} ${requester?.lastname ?? ''}`.trim() +
+              ` demande l’exclusion de ` +
               `${target.firstname} ${target.lastname}.` +
               (dto.reason?.trim() ? ` Motif : ${dto.reason.trim()}` : ''),
           },
@@ -155,30 +136,6 @@ export class GovernanceService {
     if (!target.deletionRequested) {
       throw new BadRequestException(
         'Aucune demande d’exclusion en cours pour ce membre.',
-      );
-    }
-
-    const requester = await this.prisma.member.findUnique({
-      where: { id: requesterId },
-    });
-    if (!requester) {
-      throw new UnauthorizedException('Validateur introuvable.');
-    }
-
-    // Autorisation : ADMIN, ou Chef Universitaire de l'université du membre.
-    let authorized = requester.role === 'ADMIN';
-    if (!authorized) {
-      const post = await this.prisma.universityPost.findUnique({
-        where: { memberId: requesterId },
-      });
-      authorized =
-        !!post &&
-        post.post === 'CHEF_UNIVERSITAIRE' &&
-        post.universityId === target.branch?.universityId;
-    }
-    if (!authorized) {
-      throw new ForbiddenException(
-        'Seul le Chef Universitaire du membre (ou un administrateur) peut valider.',
       );
     }
 
@@ -300,32 +257,12 @@ export class GovernanceService {
    * Modifie le statut "Figure emblématique" d'un membre (isEmblematic).
    * Réservé aux Chefs Universitaires et Administrateurs.
    */
-  async toggleEmblematic(
-    targetMemberId: number,
-    isEmblematic: boolean,
-    requesterId: number,
-  ) {
+  async toggleEmblematic(targetMemberId: number, isEmblematic: boolean) {
     const target = await this.prisma.member.findUnique({
       where: { id: targetMemberId },
     });
     if (!target) {
       throw new NotFoundException('Membre introuvable.');
-    }
-
-    const requester = await this.prisma.member.findUnique({
-      where: { id: requesterId },
-      include: { universityPost: true },
-    });
-    if (!requester) {
-      throw new UnauthorizedException('Utilisateur non identifié.');
-    }
-
-    const isAdmin = requester.role === 'ADMIN';
-    const isChef = requester.universityPost?.post === 'CHEF_UNIVERSITAIRE';
-    if (!isAdmin && !isChef) {
-      throw new ForbiddenException(
-        'Action réservée aux Chefs Universitaires et Administrateurs.',
-      );
     }
 
     const updated = await this.prisma.member.update({

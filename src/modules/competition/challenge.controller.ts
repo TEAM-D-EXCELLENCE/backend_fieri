@@ -16,13 +16,15 @@ import type {
   CloseChallengeDto,
 } from './challenge.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+import { ClubFrom, ClubManagerGuard } from '../../auth/guards';
 
 @Controller()
 export class ChallengeController {
   constructor(private readonly challengeService: ChallengeService) {}
 
   /** Création d'un challenge — Responsable de Club. */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ClubManagerGuard)
+  @ClubFrom({ param: 'id' })
   @Post('clubs/:id/challenges')
   async create(
     @Param('id') clubId: string,
@@ -56,25 +58,22 @@ export class ChallengeController {
   }
 
   /** Évaluation d'une soumission — Responsable de Club (jury). */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ClubManagerGuard)
+  @ClubFrom({ param: 'id', through: 'challenge' })
   @Post('challenges/:id/submissions/:submissionId/evaluate')
   async evaluate(
     @Param('id') id: string,
     @Param('submissionId') submissionId: string,
     @Body() dto: EvaluateDto,
-    @Request() req: AuthenticatedRequest,
   ) {
-    return this.challengeService.evaluate(id, submissionId, dto, req.user.id);
+    return this.challengeService.evaluate(id, submissionId, dto);
   }
 
   /** Clôture du challenge et attribution des badges — Responsable de Club. */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ClubManagerGuard)
+  @ClubFrom({ param: 'id', through: 'challenge' })
   @Post('challenges/:id/close')
-  async close(
-    @Param('id') id: string,
-    @Body() dto: CloseChallengeDto,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.challengeService.close(id, dto, req.user.id);
+  async close(@Param('id') id: string, @Body() dto: CloseChallengeDto) {
+    return this.challengeService.close(id, dto);
   }
 }

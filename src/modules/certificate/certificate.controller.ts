@@ -17,13 +17,14 @@ import { UniversityPosts } from '../../auth/university-post.decorator';
 import { CertificateService } from './certificate.service';
 import type { IssueCertificateDto } from './certificate.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+import { UniversityChiefGuard } from '../../auth/guards';
 
 @Controller()
 export class CertificateController {
   constructor(private readonly certificateService: CertificateService) {}
 
   /** Téléversement de la signature manuscrite (PNG) — Chef Universitaire. */
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), UniversityChiefGuard)
   @Post('members/upload-signature')
   @UseInterceptors(FileInterceptor('signature'))
   async uploadSignature(

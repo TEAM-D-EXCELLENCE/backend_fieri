@@ -15,6 +15,7 @@ import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { ClubService } from './club.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+import { ClubFrom, ClubManagerGuard } from '../../auth/guards';
 
 @Controller('clubs')
 export class ClubController {
@@ -50,16 +51,16 @@ export class ClubController {
     return this.clubService.createClub(data);
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard, ClubManagerGuard)
   @Roles('ADMIN', 'RESPONSABLE')
+  @ClubFrom({ param: 'id' })
   @Put(':id')
   async updateClub(
     @Param('id') id: string,
     @Body()
     data: Partial<{ name: string; discipline: string; description: string }>,
-    @Request() req: AuthenticatedRequest,
   ) {
-    return this.clubService.updateClub(id, data, req.user);
+    return this.clubService.updateClub(id, data);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)

@@ -19,6 +19,7 @@ import type {
   AuthenticatedRequest,
   OptionalAuthRequest,
 } from '../../auth/authenticated-request';
+import { ProjectClubMemberGuard, ProjectWriteGuard } from '../../auth/guards';
 
 @Controller('projects')
 export class ProjectController {
@@ -54,6 +55,7 @@ export class ProjectController {
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('CHERCHEUR', 'RESPONSABLE_CLUB', 'RESPONSABLE', 'ADMIN')
+  @UseGuards(ProjectClubMemberGuard)
   @Post()
   async createProject(
     @Request() req: AuthenticatedRequest,
@@ -73,6 +75,7 @@ export class ProjectController {
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('CHERCHEUR', 'RESPONSABLE_CLUB', 'RESPONSABLE', 'ADMIN')
+  @UseGuards(ProjectWriteGuard)
   @Put(':id')
   async updateProject(
     @Request() req: AuthenticatedRequest,
@@ -98,12 +101,13 @@ export class ProjectController {
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('CHERCHEUR', 'RESPONSABLE_CLUB', 'RESPONSABLE', 'ADMIN')
+  @UseGuards(ProjectWriteGuard)
   @Delete(':id')
   async deleteProject(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
   ) {
-    return this.projectService.deleteProject(id, req.user.id, req.user.role);
+    return this.projectService.deleteProject(id);
   }
 
   @UseGuards(AuthGuard('jwt'))

@@ -20,6 +20,7 @@ import type {
   AuthenticatedRequest,
   OptionalAuthRequest,
 } from '../../auth/authenticated-request';
+import { ResourceOwner, ResourceOwnerGuard } from '../../auth/guards';
 
 @Controller('news')
 export class NewsController {
@@ -70,17 +71,16 @@ export class NewsController {
     return this.newsService.approveNews(id);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), ResourceOwnerGuard)
+  @ResourceOwner({ resource: 'news' })
   @Delete(':id')
-  async deleteNews(
-    @Param('id') id: string,
-    @Request() req: AuthenticatedRequest,
-  ) {
-    return this.newsService.deleteNews(id, req.user.id);
+  async deleteNews(@Param('id') id: string) {
+    return this.newsService.deleteNews(id);
   }
 
-  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @UseGuards(AuthGuard('jwt'), RolesGuard, ResourceOwnerGuard)
   @Roles('CHERCHEUR', 'ADMIN')
+  @ResourceOwner({ resource: 'news' })
   @Put(':id')
   async updateNews(
     @Param('id') id: string,

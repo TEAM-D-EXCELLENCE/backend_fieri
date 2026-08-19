@@ -3,9 +3,9 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ClubScopeService } from '../../common/club-scope/club-scope.service';
 
 export interface CreateActivityDto {
   title: string;
@@ -26,72 +26,29 @@ const ACTIVITY_STATUSES = ['TODO', 'IN_PROGRESS', 'DONE'];
 export class ClubSpaceService {
   private readonly logger = new Logger(ClubSpaceService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private clubScope: ClubScopeService,
+  ) {}
 
-  /** Charge le club et vérifie que l'appelant en est le responsable (ou ADMIN). */
-  private async assertClubResponsible(clubId: string, userId: number) {
+  /**
+   * Charge le club visé. L'autorisation (« responsable du club ») est portée
+   * en amont par `ClubManagerGuard` : ce service ne la revérifie pas.
+   */
+  private async loadClub(clubId: string) {
     const club = await this.prisma.club.findUnique({ where: { id: clubId } });
     if (!club) {
       throw new NotFoundException('Club introuvable.');
-    }
-    const requester = await this.prisma.member.findUnique({
-      where: { id: userId },
-    });
-    if (requester?.role === 'ADMIN') {
-      return club;
-    }
-    if (club.responsibleId !== userId) {
-      throw new ForbiddenException('Action réservée au responsable du club.');
     }
     return club;
   }
 
-  /** Déduit l'université d'un club via son responsable (fallback : un membre). */
-  private async getClubUniversityId(clubId: string): Promise<number | null> {
-    const club = await this.prisma.club.findUnique({
-      where: { id: clubId },
-      include: { responsible: { include: { branch: true } } },
-    });
-    if (club?.responsible?.branch) {
-      return club.responsible.branch.universityId;
-    }
-    const membership = await this.prisma.clubMembership.findFirst({
-      where: { clubId, status: 'APPROVED' },
-      include: { member: { include: { branch: true } } },
-    });
-    return membership?.member.branch.universityId ?? null;
-  }
-
   /** Liste des membres actifs d'un club (Responsable / Secrétaire / ADMIN). */
-  async getMembersList(clubId: string, userId: number) {
+  async getMembersList(clubId: string) {
     const club = await this.prisma.club.findUnique({ where: { id: clubId } });
     if (!club) {
       throw new NotFoundException('Club introuvable.');
     }
-    const requester = await this.prisma.member.findUnique({
-      where: { id: userId },
-    });
-
-    let authorized =
-      requester?.role === 'ADMIN' || club.responsibleId === userId;
-    if (!authorized) {
-      const universityId = await this.getClubUniversityId(clubId);
-      if (universityId) {
-        const post = await this.prisma.universityPost.findUnique({
-          where: { memberId: userId },
-        });
-        authorized =
-          !!post &&
-          post.post === 'SECRETAIRE' &&
-          post.universityId === universityId;
-      }
-    }
-    if (!authorized) {
-      throw new ForbiddenException(
-        'Réservé au responsable du club, à la secrétaire ou à un administrateur.',
-      );
-    }
-
     const memberships = await this.prisma.clubMembership.findMany({
       where: { clubId, status: 'APPROVED' },
       include: {
@@ -132,8 +89,8 @@ export class ClubSpaceService {
    * recensement (snapshot immuable).
    */
   async submitCensus(clubId: string, submitterId: number) {
-    const club = await this.assertClubResponsible(clubId, submitterId);
-    const universityId = await this.getClubUniversityId(clubId);
+    const club = await this.loadClub(clubId);
+    const universityId = await this.clubScope.getClubUniversityId(clubId);
     if (!universityId) {
       throw new BadRequestException(
         "Impossible de déterminer l'université du club (aucun responsable ni membre rattaché).",
@@ -199,12 +156,8 @@ export class ClubSpaceService {
   }
 
   /** Création d'une activité assignée à un membre du club (Responsable/ADMIN). */
-  async createAssignedActivity(
-    clubId: string,
-    dto: CreateActivityDto,
-    requesterId: number,
-  ) {
-    const club = await this.assertClubResponsible(clubId, requesterId);
+  async createAssignedActivity(clubId: string, dto: CreateActivityDto) {
+    const club = await this.loadClub(clubId);
     if (!dto.title?.trim()) {
       throw new BadRequestException('Un titre d’activité est requis.');
     }
@@ -251,11 +204,7 @@ export class ClubSpaceService {
   }
 
   /** Mise à jour du statut d'une activité (membre assigné, responsable ou ADMIN). */
-  async updateActivityStatus(
-    activityId: string,
-    status: string,
-    requesterId: number,
-  ) {
+  async updateActivityStatus(activityId: string, status: string) {
     if (!ACTIVITY_STATUSES.includes(status)) {
       throw new BadRequestException(
         `Statut invalide. Valeurs autorisées : ${ACTIVITY_STATUSES.join(', ')}.`,
@@ -268,19 +217,6 @@ export class ClubSpaceService {
     if (!activity) {
       throw new NotFoundException('Activité introuvable.');
     }
-    const requester = await this.prisma.member.findUnique({
-      where: { id: requesterId },
-    });
-    const authorized =
-      requester?.role === 'ADMIN' ||
-      activity.memberId === requesterId ||
-      activity.club.responsibleId === requesterId;
-    if (!authorized) {
-      throw new ForbiddenException(
-        'Seuls le membre assigné, le responsable du club ou un administrateur peuvent modifier cette activité.',
-      );
-    }
-
     const updated = await this.prisma.assignedActivity.update({
       where: { id: activityId },
       data: { status },
@@ -426,13 +362,13 @@ export class ClubSpaceService {
     dto: SubmitReportDto,
     authorId: number,
   ) {
-    const club = await this.assertClubResponsible(clubId, authorId);
+    const club = await this.loadClub(clubId);
     if (!dto.period?.trim() || !dto.title?.trim() || !dto.content?.trim()) {
       throw new BadRequestException(
         'Période, titre et contenu du rapport sont requis.',
       );
     }
-    const universityId = await this.getClubUniversityId(clubId);
+    const universityId = await this.clubScope.getClubUniversityId(clubId);
     if (!universityId) {
       throw new BadRequestException(
         "Impossible de déterminer l'université du club.",
@@ -471,9 +407,7 @@ export class ClubSpaceService {
   }
 
   /** Rapports d'activité d'un club (Responsable / Secrétaire / ADMIN). */
-  async listClubReports(clubId: string, userId: number) {
-    // Réutilise l'autorisation de la liste des membres (mêmes ayants droit).
-    await this.getMembersList(clubId, userId);
+  async listClubReports(clubId: string) {
     const reports = await this.prisma.activityReport.findMany({
       where: { clubId },
       orderBy: { createdAt: 'desc' },

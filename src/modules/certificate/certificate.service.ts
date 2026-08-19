@@ -3,7 +3,6 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../common/storage/storage.service';
@@ -52,22 +51,6 @@ export class CertificateService {
     }
     if (file.size > MAX_SIGNATURE_BYTES) {
       throw new BadRequestException('Image trop volumineuse (max 2 Mo).');
-    }
-
-    const member = await this.prisma.member.findUnique({
-      where: { id: memberId },
-    });
-    if (!member) {
-      throw new NotFoundException('Membre introuvable.');
-    }
-    const post = await this.prisma.universityPost.findUnique({
-      where: { memberId },
-    });
-    const isChef = post?.post === 'CHEF_UNIVERSITAIRE';
-    if (member.role !== 'ADMIN' && !isChef) {
-      throw new ForbiddenException(
-        'Seul un Chef Universitaire peut enregistrer une signature officielle.',
-      );
     }
 
     const stored = await this.storage.save(file.buffer, {
