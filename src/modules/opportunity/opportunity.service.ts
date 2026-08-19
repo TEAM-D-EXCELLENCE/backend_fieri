@@ -4,6 +4,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class OpportunityService {
@@ -14,7 +15,7 @@ export class OpportunityService {
     discipline?: string;
     status?: string;
   }) {
-    const where: any = {};
+    const where: Prisma.OpportunityWhereInput = {};
     if (query.type) {
       where.type = query.type;
     }

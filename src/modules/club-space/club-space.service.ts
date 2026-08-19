@@ -306,7 +306,10 @@ export class ClubSpaceService {
         include: { project: true },
       }),
     ]);
-    const projectsById = new Map<string, { id: string; title: string; status: string; role: string }>();
+    const projectsById = new Map<
+      string,
+      { id: string; title: string; status: string; role: string }
+    >();
     for (const p of owned) {
       projectsById.set(p.id, {
         id: p.id,
@@ -383,7 +386,9 @@ export class ClubSpaceService {
       where: { id: censusId },
     });
     if (!census || census.universityId !== universityId) {
-      throw new NotFoundException('Recensement introuvable pour cette université.');
+      throw new NotFoundException(
+        'Recensement introuvable pour cette université.',
+      );
     }
     if (census.status === 'VALIDATED') {
       throw new BadRequestException('Ce recensement est déjà validé.');

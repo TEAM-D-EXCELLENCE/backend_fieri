@@ -367,6 +367,10 @@ model Opportunity {
 
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+
+  @@index([discipline])
+  @@index([status])
+  @@index([type])
 }
 
 model Application {
@@ -402,6 +406,12 @@ model Publication {
 
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
+
+  @@index([authorId])
+  @@index([category])
+  @@index([clubId])
+  @@index([projectId])
+  @@index([status])
 }
 
 model Contribution {
@@ -416,6 +426,11 @@ model Contribution {
   member       Member?      @relation(fields: [memberId], references: [id])
 
   createdAt    DateTime     @default(now())
+
+  // Index créés directement en SQL dans les migrations : déclarés ici pour que
+  // `prisma migrate dev` ne propose plus de les supprimer.
+  @@index([memberId])
+  @@index([type])
 }
 
 model ResearcherFollow {

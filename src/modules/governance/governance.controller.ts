@@ -16,6 +16,7 @@ import type {
   RequestDeletionDto,
   ConfirmDeletionDto,
 } from './governance.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller()
 export class GovernanceController {
@@ -27,7 +28,7 @@ export class GovernanceController {
   async requestDeletion(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: RequestDeletionDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.governanceService.requestDeletion(id, dto, req.user.id);
   }
@@ -38,7 +39,7 @@ export class GovernanceController {
   async confirmDeletion(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: ConfirmDeletionDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.governanceService.confirmDeletion(id, dto, req.user.id);
   }
@@ -57,9 +58,13 @@ export class GovernanceController {
   async toggleEmblematic(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { isEmblematic: boolean },
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
-    return this.governanceService.toggleEmblematic(id, body.isEmblematic, req.user.id);
+    return this.governanceService.toggleEmblematic(
+      id,
+      body.isEmblematic,
+      req.user.id,
+    );
   }
 
   /** Liste publique des figures emblématiques de la communauté. */

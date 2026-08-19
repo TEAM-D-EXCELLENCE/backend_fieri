@@ -41,7 +41,8 @@ export class ContributionService {
 
     return {
       success: true,
-      message: 'Votre demande de partenariat a été reçue. Nous vous contacterons.',
+      message:
+        'Votre demande de partenariat a été reçue. Nous vous contacterons.',
     };
   }
 

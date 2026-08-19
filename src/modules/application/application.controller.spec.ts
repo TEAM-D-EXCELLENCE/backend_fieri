@@ -3,6 +3,7 @@ import { ApplicationController } from './application.controller';
 import { ApplicationService } from './application.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Reflector } from '@nestjs/core';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 describe('ApplicationController', () => {
   let controller: ApplicationController;
@@ -47,7 +48,7 @@ describe('ApplicationController', () => {
         success: true,
         data: [],
       });
-      const req = { user: { id: 1 } };
+      const req = { user: { id: 1 } } as unknown as AuthenticatedRequest;
 
       const result = await controller.getMyApplications(req);
 
@@ -63,7 +64,7 @@ describe('ApplicationController', () => {
         hasApplied: false,
         application: null,
       });
-      const req = { user: { id: 1 } };
+      const req = { user: { id: 1 } } as unknown as AuthenticatedRequest;
 
       const result = await controller.checkIfApplied('opp-1', req);
 

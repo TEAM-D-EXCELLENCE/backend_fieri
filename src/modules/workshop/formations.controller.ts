@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { WorkshopService } from './workshop.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('formations')
 export class FormationsController {
@@ -58,7 +59,7 @@ export class FormationsController {
   @Post(':id/register')
   async register(
     @Param('id') id: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body('userFullName') userFullName: string,
   ) {
     const fullName =
@@ -70,7 +71,7 @@ export class FormationsController {
   @Post(':id/waitlist')
   async registerWaitlist(
     @Param('id') id: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body('userFullName') userFullName: string,
   ) {
     const fullName =
@@ -84,7 +85,10 @@ export class FormationsController {
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id/register')
-  async deregister(@Param('id') id: string, @Request() req) {
+  async deregister(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.workshopService.deregisterFromWorkshop(id, req.user.id);
   }
 }

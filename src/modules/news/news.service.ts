@@ -4,6 +4,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
+import type { PaginatedResponse } from '../../common/pagination';
 
 @Injectable()
 export class NewsService {
@@ -16,7 +18,7 @@ export class NewsService {
     page?: number,
     limit?: number,
   ) {
-    let whereClause: any = { status: 'APPROVED' };
+    let whereClause: Prisma.NewsWhereInput = { status: 'APPROVED' };
 
     if (includePending && memberId) {
       const member = await this.prisma.member.findUnique({
@@ -29,9 +31,10 @@ export class NewsService {
       }
     }
 
-    if (featured) {
-      whereClause.category = { not: null };
-    }
+    // NOTE: `featured` n'est pas filtrable en l'état — le modèle `News` n'a pas
+    // de champ dédié et `category` est non-nullable, donc l'ancien filtre
+    // `{ not: null }` était toujours vrai. Comportement inchangé (aucun
+    // filtrage) en attendant l'ajout d'un champ `featured` au schéma.
 
     const skip = page && limit ? (page - 1) * limit : undefined;
     const take = limit || undefined;
@@ -51,21 +54,23 @@ export class NewsService {
       this.prisma.news.count({ where: whereClause }),
     ]);
 
-    const result: any = {
+    const data = newsList.map((n) => ({
+      id: n.id,
+      title: n.title,
+      content: n.content,
+      status: n.status,
+      category: n.category,
+      author: {
+        id: n.author.id,
+        firstName: n.author.firstname,
+        lastName: n.author.lastname,
+      },
+      createdAt: n.createdAt,
+    }));
+
+    const result: PaginatedResponse<(typeof data)[number]> = {
       success: true,
-      data: newsList.map((n) => ({
-        id: n.id,
-        title: n.title,
-        content: n.content,
-        status: n.status,
-        category: n.category,
-        author: {
-          id: n.author.id,
-          firstName: n.author.firstname,
-          lastName: n.author.lastname,
-        },
-        createdAt: n.createdAt,
-      })),
+      data,
     };
 
     if (page && limit) {

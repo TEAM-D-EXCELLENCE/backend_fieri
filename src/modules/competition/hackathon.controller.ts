@@ -13,6 +13,7 @@ import { UniversityPostGuard } from '../../auth/university-post.guard';
 import { UniversityPosts } from '../../auth/university-post.decorator';
 import { HackathonService } from './hackathon.service';
 import type { CreateHackathonDto } from './hackathon.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller()
 export class HackathonController {
@@ -25,9 +26,13 @@ export class HackathonController {
   async create(
     @Param('id', ParseIntPipe) universityId: number,
     @Body() dto: CreateHackathonDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
-    return this.hackathonService.createHackathon(universityId, dto, req.user.id);
+    return this.hackathonService.createHackathon(
+      universityId,
+      dto,
+      req.user.id,
+    );
   }
 
   /** Hackathons d'une université. */

@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  qualite:
+    name: Lint, build & tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `lint:ci` et non `lint` : ce dernier corrige les fichiers (`--fix`), ce
+      # qui n'a pas de sens sur un runner et masquerait les erreurs corrigeables.
+      - run: npm run lint:ci
+      - run: npm run build
+      - run: npm test
+
+  migrations:
+    name: Migrations Prisma
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fieri_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fieri_ci
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fieri_shadow
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Rejoue tout l'historique sur une base vierge, exactement comme le fait
+      # `vercel-build` au déploiement. Détecte une migration non rejouable
+      # (SQL invalide, ordre incohérent) AVANT qu'elle ne bloque la production.
+      - name: Rejouer les migrations sur une base vierge
+        run: npx prisma migrate deploy
+
+      - name: Préparer la base fantôme
+        run: psql "$DATABASE_URL" -c 'CREATE DATABASE fieri_shadow;'
+
+      # Garde-fou anti-dérive : `schema.prisma` doit être intégralement couvert
+      # par les migrations. Sans ce contrôle, un champ ajouté au schéma et
+      # poussé en base avec `prisma db push` casse toute reconstruction depuis
+      # zéro (cas vécu : colonne `Member.signatureUrl` absente des migrations).
+      - name: Vérifier l'absence de dérive de schéma
+        run: |
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url "$SHADOW_DATABASE_URL" \
+            --exit-code

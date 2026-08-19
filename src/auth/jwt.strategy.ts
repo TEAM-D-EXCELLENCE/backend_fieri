@@ -2,11 +2,14 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import type { AuthUser, JwtPayload } from './authenticated-request';
 
 // Fail-fast : impossible de démarrer sans clé JWT (évite un secret undefined en prod)
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  throw new Error('JWT_SECRET manquant : définis-le dans .env (local) et dans Vercel (prod)');
+  throw new Error(
+    'JWT_SECRET manquant : définis-le dans .env (local) et dans Vercel (prod)',
+  );
 }
 
 @Injectable()
@@ -26,11 +29,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
    * token est rejeté (401) — déconnexion forcée côté client. Le rôle est lu en
    * base pour que les changements de droits prennent effet immédiatement.
    */
-  async validate(payload: any) {
+  async validate(payload: JwtPayload): Promise<AuthUser> {
     const member = await this.prisma.member.findUnique({
       where: { id: payload.sub },
       select: {
         id: true,
+        firstname: true,
+        lastname: true,
         email: true,
         role: true,
         isActive: true,
@@ -40,6 +45,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (!member || member.deletionRequested || !member.isActive) {
       throw new UnauthorizedException('Accès suspendu ou compte introuvable.');
     }
-    return { id: member.id, email: member.email, role: member.role };
+    return {
+      id: member.id,
+      firstname: member.firstname,
+      lastname: member.lastname,
+      email: member.email,
+      role: member.role,
+    };
   }
 }

@@ -6,7 +6,12 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
-const TRANSACTION_TYPES = ['COTISATION', 'DON', 'SUBVENTION', 'DEPENSE'] as const;
+const TRANSACTION_TYPES = [
+  'COTISATION',
+  'DON',
+  'SUBVENTION',
+  'DEPENSE',
+] as const;
 type TransactionType = (typeof TRANSACTION_TYPES)[number];
 
 export interface RecordTransactionDto {

@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import type { RegisterDto } from './auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -15,7 +16,7 @@ export class AuthService {
   ) {}
 
   // Inscription d'un nouveau membre
-  async register(data: any) {
+  async register(data: RegisterDto) {
     // 1. Vérifier si l'email existe déjà
     const existing = await this.prisma.member.findUnique({
       where: { email: data.email },

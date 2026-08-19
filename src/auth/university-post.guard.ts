@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
+import type { OptionalAuthRequest } from './authenticated-request';
 import { UNIVERSITY_POSTS_KEY } from './university-post.decorator';
 
 /**
@@ -30,7 +31,7 @@ export class UniversityPostGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<OptionalAuthRequest>();
     const user = request.user;
     if (!user) {
       throw new ForbiddenException('Authentification requise.');

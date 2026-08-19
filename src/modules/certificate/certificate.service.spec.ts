@@ -4,7 +4,6 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../common/storage/storage.service';
 import { MailService } from '../../common/mail/mail.service';
 import { PdfService } from '../../common/pdf/pdf.service';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 describe('CertificateService', () => {
   let service: CertificateService;
@@ -32,7 +31,9 @@ describe('CertificateService', () => {
   };
 
   const mockStorage = {
-    save: jest.fn().mockResolvedValue({ url: 'http://localhost:3000/uploads/certificates/attestation-1.pdf' }),
+    save: jest.fn().mockResolvedValue({
+      url: 'http://localhost:3000/uploads/certificates/attestation-1.pdf',
+    }),
     readByUrl: jest.fn().mockResolvedValue(null),
   };
 
@@ -73,14 +74,46 @@ describe('CertificateService', () => {
 
   it('should issue a certificate successfully', async () => {
     mockPrisma.member.findUnique
-      .mockResolvedValueOnce({ id: 1, firstname: 'Chef', lastname: 'Uni', signatureUrl: '/uploads/signatures/sig.png' })
-      .mockResolvedValueOnce({ id: 2, firstname: 'Jean', lastname: 'Kossi', email: 'jean@example.com' });
-    
-    mockPrisma.university.findUnique.mockResolvedValueOnce({ id: 1, name: 'UAC' });
-    mockPrisma.certificate.create.mockResolvedValueOnce({ id: 'cert-001', recipientId: 2, issuerId: 1, title: 'Attestation IA', category: 'FORMATION', fileUrl: '' });
-    mockPrisma.certificate.update.mockResolvedValueOnce({ id: 'cert-001', recipientId: 2, issuerId: 1, title: 'Attestation IA', category: 'FORMATION', fileUrl: '/uploads/cert.pdf', createdAt: new Date() });
+      .mockResolvedValueOnce({
+        id: 1,
+        firstname: 'Chef',
+        lastname: 'Uni',
+        signatureUrl: '/uploads/signatures/sig.png',
+      })
+      .mockResolvedValueOnce({
+        id: 2,
+        firstname: 'Jean',
+        lastname: 'Kossi',
+        email: 'jean@example.com',
+      });
 
-    const result = await service.issueCertificate(1, { recipientId: 2, title: 'Attestation IA', category: 'FORMATION' }, 1);
+    mockPrisma.university.findUnique.mockResolvedValueOnce({
+      id: 1,
+      name: 'UAC',
+    });
+    mockPrisma.certificate.create.mockResolvedValueOnce({
+      id: 'cert-001',
+      recipientId: 2,
+      issuerId: 1,
+      title: 'Attestation IA',
+      category: 'FORMATION',
+      fileUrl: '',
+    });
+    mockPrisma.certificate.update.mockResolvedValueOnce({
+      id: 'cert-001',
+      recipientId: 2,
+      issuerId: 1,
+      title: 'Attestation IA',
+      category: 'FORMATION',
+      fileUrl: '/uploads/cert.pdf',
+      createdAt: new Date(),
+    });
+
+    const result = await service.issueCertificate(
+      1,
+      { recipientId: 2, title: 'Attestation IA', category: 'FORMATION' },
+      1,
+    );
 
     expect(result.success).toBe(true);
     expect(result.data.fileUrl).toBe('/uploads/cert.pdf');

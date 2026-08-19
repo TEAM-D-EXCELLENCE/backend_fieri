@@ -1,8 +1,18 @@
-import { Controller, Get, Post, Param, Query, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { PublicationService } from './publication.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('publications')
 export class PublicationController {
@@ -37,8 +47,15 @@ export class PublicationController {
   @Roles('CHERCHEUR', 'ADMIN')
   @Post()
   async createPublication(
-    @Request() req,
-    @Body() data: { title: string; content: string; category: string; projectId?: string; clubId?: string },
+    @Request() req: AuthenticatedRequest,
+    @Body()
+    data: {
+      title: string;
+      content: string;
+      category: string;
+      projectId?: string;
+      clubId?: string;
+    },
   ) {
     return this.publicationService.createPublication(req.user.id, data);
   }

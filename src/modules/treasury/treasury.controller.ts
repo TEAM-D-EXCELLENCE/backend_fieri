@@ -13,6 +13,7 @@ import { UniversityPostGuard } from '../../auth/university-post.guard';
 import { UniversityPosts } from '../../auth/university-post.decorator';
 import { TreasuryService } from './treasury.service';
 import type { RecordTransactionDto } from './treasury.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('universities')
 export class TreasuryController {
@@ -33,7 +34,7 @@ export class TreasuryController {
   async recordTransaction(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: RecordTransactionDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.treasuryService.recordTransaction(id, dto, req.user.id);
   }

@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { parseProjectTeam } from '../../common/project-team';
 
 @Injectable()
 export class ResearcherService {
@@ -16,7 +17,7 @@ export class ResearcherService {
       },
     });
 
-    const data = members.map(m => ({
+    const data = members.map((m) => ({
       id: m.id,
       firstName: m.firstname,
       lastName: m.lastname,
@@ -48,21 +49,11 @@ export class ResearcherService {
       `${member.firstname} ${member.lastname}`.toLowerCase();
 
     const projects = allProjects
-      .filter((p) => {
-        try {
-          let teamArray: any[] = [];
-          if (p.team && typeof p.team === 'string') {
-            teamArray = JSON.parse(p.team);
-          } else if (Array.isArray(p.team)) {
-            teamArray = p.team as any[];
-          }
-          return teamArray.some(
-            (t) => t.name && t.name.toLowerCase() === researcherName,
-          );
-        } catch (e) {
-          return false;
-        }
-      })
+      .filter((p) =>
+        parseProjectTeam(p.team).some(
+          (t) => t.name?.toLowerCase() === researcherName,
+        ),
+      )
       .map((p) => p.id);
 
     return {

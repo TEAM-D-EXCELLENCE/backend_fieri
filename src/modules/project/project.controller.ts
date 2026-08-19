@@ -15,6 +15,10 @@ import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { ProjectService } from './project.service';
+import type {
+  AuthenticatedRequest,
+  OptionalAuthRequest,
+} from '../../auth/authenticated-request';
 
 @Controller('projects')
 export class ProjectController {
@@ -23,7 +27,7 @@ export class ProjectController {
   @UseGuards(OptionalJwtAuthGuard)
   @Get()
   async getProjects(
-    @Request() req,
+    @Request() req: OptionalAuthRequest,
     @Query('clubId') clubId?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
@@ -33,7 +37,14 @@ export class ProjectController {
     const memberId = req.user ? req.user.id : undefined;
     const pageNum = page ? parseInt(page, 10) : undefined;
     const limitNum = limit ? parseInt(limit, 10) : undefined;
-    return this.projectService.getProjects(memberId, clubId, status, search, pageNum, limitNum);
+    return this.projectService.getProjects(
+      memberId,
+      clubId,
+      status,
+      search,
+      pageNum,
+      limitNum,
+    );
   }
 
   @Get(':id')
@@ -45,7 +56,7 @@ export class ProjectController {
   @Roles('CHERCHEUR', 'RESPONSABLE_CLUB', 'RESPONSABLE', 'ADMIN')
   @Post()
   async createProject(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body()
     data: {
       title: string;
@@ -64,7 +75,7 @@ export class ProjectController {
   @Roles('CHERCHEUR', 'RESPONSABLE_CLUB', 'RESPONSABLE', 'ADMIN')
   @Put(':id')
   async updateProject(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body()
     data: Partial<{
@@ -88,26 +99,38 @@ export class ProjectController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('CHERCHEUR', 'RESPONSABLE_CLUB', 'RESPONSABLE', 'ADMIN')
   @Delete(':id')
-  async deleteProject(@Request() req, @Param('id') id: string) {
+  async deleteProject(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
     return this.projectService.deleteProject(id, req.user.id, req.user.role);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Post(':id/follow')
-  async followProject(@Param('id') id: string, @Request() req) {
+  async followProject(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.projectService.followProject(id, req.user.id);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id/follow')
-  async unfollowProject(@Param('id') id: string, @Request() req) {
+  async unfollowProject(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.projectService.unfollowProject(id, req.user.id);
   }
 
   // Conserve la bascule pour les clients qui l'utilisent (bouton étoile).
   @UseGuards(AuthGuard('jwt'))
   @Post(':id/toggle-follow')
-  async toggleFollowProject(@Param('id') id: string, @Request() req) {
+  async toggleFollowProject(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.projectService.toggleFollowProject(id, req.user.id);
   }
 
@@ -115,7 +138,7 @@ export class ProjectController {
   @Post(':id/support')
   async supportProject(
     @Param('id') id: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body('amount') amount: number,
     @Body('message') message?: string,
   ) {

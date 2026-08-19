@@ -14,6 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { OpportunityService } from './opportunity.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('opportunities')
 export class OpportunityController {
@@ -41,7 +42,7 @@ export class OpportunityController {
   @Roles('CHERCHEUR', 'ADMIN')
   @Post()
   async createOpportunity(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body()
     data: {
       title: string;
@@ -58,7 +59,7 @@ export class OpportunityController {
   @Roles('CHERCHEUR', 'ADMIN')
   @Put(':id')
   async updateOpportunity(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body()
     data: Partial<{
@@ -81,7 +82,10 @@ export class OpportunityController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('CHERCHEUR', 'ADMIN')
   @Delete(':id')
-  async deleteOpportunity(@Request() req, @Param('id') id: string) {
+  async deleteOpportunity(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
     return this.opportunityService.deleteOpportunity(
       id,
       req.user.id,

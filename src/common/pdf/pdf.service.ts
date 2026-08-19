@@ -165,7 +165,7 @@ export class PdfService {
         .fontSize(8)
         .text(
           'Ce hash constitue une empreinte cryptographique du consentement. ' +
-            "Toute altération du contenu invaliderait la signature.",
+            'Toute altération du contenu invaliderait la signature.',
           left,
           boxY + 145,
           { width },

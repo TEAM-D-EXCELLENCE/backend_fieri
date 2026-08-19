@@ -2,9 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class MembersService {
@@ -81,7 +81,7 @@ export class MembersService {
     page: number;
     limit: number;
   }) {
-    const where: any = {};
+    const where: Prisma.MemberWhereInput = {};
 
     if (params.search) {
       where.OR = [
@@ -123,7 +123,10 @@ export class MembersService {
         branchId: m.branchId,
         isEmblematic: m.isEmblematic,
         universityPost: m.universityPost
-          ? { post: m.universityPost.post, universityId: m.universityPost.universityId }
+          ? {
+              post: m.universityPost.post,
+              universityId: m.universityPost.universityId,
+            }
           : null,
         countryPost: m.countryPost
           ? { post: m.countryPost.post, countryId: m.countryPost.countryId }
@@ -140,12 +143,17 @@ export class MembersService {
     };
   }
 
-  async updateMemberRole(
-    memberId: number,
-    newRole: string,
-    adminId: number,
-  ) {
-    const validRoles = ['ETUDIANT', 'CHERCHEUR', 'CHEF_DE_PROJET', 'MENTOR', 'RESPONSABLE', 'ADMIN'];
+  // `_adminId` : identité de l'administrateur à l'origine du changement,
+  // transmise par le contrôleur et conservée pour un futur journal d'audit.
+  async updateMemberRole(memberId: number, newRole: string, _adminId: number) {
+    const validRoles = [
+      'ETUDIANT',
+      'CHERCHEUR',
+      'CHEF_DE_PROJET',
+      'MENTOR',
+      'RESPONSABLE',
+      'ADMIN',
+    ];
 
     if (!validRoles.includes(newRole)) {
       throw new BadRequestException(

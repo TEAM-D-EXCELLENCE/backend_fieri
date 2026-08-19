@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ResearcherService } from './researcher.service';
+import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('researchers')
 export class ResearcherController {
@@ -24,7 +25,7 @@ export class ResearcherController {
 
   @UseGuards(AuthGuard('jwt'))
   @Get('me')
-  async getMyProfile(@Request() req) {
+  async getMyProfile(@Request() req: AuthenticatedRequest) {
     return this.researcherService.getMyResearcherProfile(req.user.id);
   }
 
@@ -41,7 +42,7 @@ export class ResearcherController {
   @UseGuards(AuthGuard('jwt'))
   @Put('me')
   async updateMyProfile(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body() data: { bio?: string; skills?: string[]; avatarUrl?: string },
   ) {
     return this.researcherService.updateMyResearcherProfile(req.user.id, data);
@@ -51,7 +52,7 @@ export class ResearcherController {
   @Post(':id/follow')
   async followResearcher(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.researcherService.toggleFollowResearcher(req.user.id, id);
   }
@@ -60,7 +61,7 @@ export class ResearcherController {
   @Delete(':id/follow')
   async unfollowResearcher(
     @Param('id', ParseIntPipe) id: number,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.researcherService.unfollowResearcher(req.user.id, id);
   }
