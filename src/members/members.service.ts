@@ -48,6 +48,9 @@ export class MembersService {
       branchId: member.branchId,
       isEmblematic: member.isEmblematic,
       avatarUrl: member.avatarUrl,
+      // Griffe officielle apposée sur les attestations : le front en a besoin
+      // pour savoir si le Chef Universitaire en a déjà déposé une.
+      signatureUrl: member.signatureUrl,
       bio: member.bio,
       skills: member.skills,
       distinctions: member.distinctions,
