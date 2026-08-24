@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Put,
   Param,
   Query,
   UseGuards,
@@ -74,5 +75,41 @@ export class MembersController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.membersService.updateMemberRole(id, body.role, req.user.id);
+  }
+
+  /**
+   * Attribue le poste d'université d'un membre — le second axe du modèle
+   * d'accès. `post: null` retire le poste.
+   *
+   * Ces postes commandent l'essentiel de la navigation de l'espace connecté
+   * (trésorerie, attestations, rapports), et aucune interface ne permettait de
+   * les attribuer : seul le rôle linéaire l'était.
+   */
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
+  @Put(':id/university-post')
+  async setUniversityPost(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { post: string | null; universityId: number },
+  ) {
+    return this.membersService.setUniversityPost(
+      id,
+      body.post ?? null,
+      body.universityId,
+    );
+  }
+
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
+  @Put(':id/country-post')
+  async setCountryPost(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { post: string | null; countryId: number },
+  ) {
+    return this.membersService.setCountryPost(
+      id,
+      body.post ?? null,
+      body.countryId,
+    );
   }
 }

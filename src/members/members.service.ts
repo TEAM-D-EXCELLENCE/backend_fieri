@@ -146,6 +146,134 @@ export class MembersService {
     };
   }
 
+  // ─── Postes de gouvernance scopés ───────────────────────────────────────
+  // Deuxième axe du modèle d'accès : ce que la personne ADMINISTRE, et où.
+  // Ces postes gouvernent l'essentiel de la navigation côté client, et aucun
+  // écran ne permettait de les attribuer — seul le rôle linéaire l'était.
+  static readonly UNIVERSITY_POSTS = [
+    'CHEF_UNIVERSITAIRE',
+    'SECRETAIRE',
+    'TRESORIER',
+    'RESP_COMMUNICATION',
+  ];
+
+  static readonly COUNTRY_POSTS = ['GOUVERNANT_PAYS'];
+
+  /**
+   * Attribue, remplace ou retire le poste d'université d'un membre.
+   * `post: null` retire le poste. Un membre n'en a qu'un (memberId @unique).
+   */
+  async setUniversityPost(
+    memberId: number,
+    post: string | null,
+    universityId: number,
+  ) {
+    const member = await this.prisma.member.findUnique({
+      where: { id: memberId },
+    });
+    if (!member) {
+      throw new NotFoundException('Membre non trouvé');
+    }
+
+    if (post === null) {
+      await this.prisma.universityPost.deleteMany({ where: { memberId } });
+      return {
+        success: true,
+        message: "Poste d'université retiré.",
+        data: { id: memberId, universityPost: null },
+      };
+    }
+
+    if (!MembersService.UNIVERSITY_POSTS.includes(post)) {
+      throw new BadRequestException(
+        `Poste invalide. Valeurs acceptées : ${MembersService.UNIVERSITY_POSTS.join(', ')}`,
+      );
+    }
+
+    const university = await this.prisma.university.findUnique({
+      where: { id: universityId },
+    });
+    if (!university) {
+      throw new NotFoundException('Université non trouvée');
+    }
+
+    // Un seul titulaire par poste et par université : attribuer le poste le
+    // retire à son précédent titulaire, plutôt que d'en laisser deux en place.
+    await this.prisma.universityPost.deleteMany({
+      where: { universityId, post, NOT: { memberId } },
+    });
+
+    const saved = await this.prisma.universityPost.upsert({
+      where: { memberId },
+      create: { memberId, universityId, post },
+      update: { universityId, post },
+    });
+
+    return {
+      success: true,
+      message: 'Poste attribué avec succès.',
+      data: {
+        id: memberId,
+        universityPost: { post: saved.post, universityId: saved.universityId },
+      },
+    };
+  }
+
+  /** Idem pour le poste national. */
+  async setCountryPost(
+    memberId: number,
+    post: string | null,
+    countryId: number,
+  ) {
+    const member = await this.prisma.member.findUnique({
+      where: { id: memberId },
+    });
+    if (!member) {
+      throw new NotFoundException('Membre non trouvé');
+    }
+
+    if (post === null) {
+      await this.prisma.countryPost.deleteMany({ where: { memberId } });
+      return {
+        success: true,
+        message: 'Poste national retiré.',
+        data: { id: memberId, countryPost: null },
+      };
+    }
+
+    if (!MembersService.COUNTRY_POSTS.includes(post)) {
+      throw new BadRequestException(
+        `Poste invalide. Valeurs acceptées : ${MembersService.COUNTRY_POSTS.join(', ')}`,
+      );
+    }
+
+    const country = await this.prisma.country.findUnique({
+      where: { id: countryId },
+    });
+    if (!country) {
+      throw new NotFoundException('Pays non trouvé');
+    }
+
+    await this.prisma.countryPost.deleteMany({
+      where: { countryId, post, NOT: { memberId } },
+    });
+
+    const saved = await this.prisma.countryPost.upsert({
+      where: { memberId },
+      create: { memberId, countryId, post },
+      update: { countryId, post },
+    });
+
+    return {
+      success: true,
+      message: 'Poste national attribué avec succès.',
+      data: {
+        id: memberId,
+        countryPost: { post: saved.post, countryId: saved.countryId },
+      },
+    };
+  }
+
   // `_adminId` : identité de l'administrateur à l'origine du changement,
   // transmise par le contrôleur et conservée pour un futur journal d'audit.
   async updateMemberRole(memberId: number, newRole: string, _adminId: number) {
