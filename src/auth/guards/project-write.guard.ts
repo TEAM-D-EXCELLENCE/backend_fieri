@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import type { OptionalAuthRequest } from '../authenticated-request';
 import { paramOf } from './request-params';
+import { aAutoriteSurProjet } from './project-authority';
 
 /**
  * Autorise la modification ou la suppression d'un projet : son porteur, le
@@ -26,31 +27,20 @@ export class ProjectWriteGuard implements CanActivate {
     if (!user) {
       throw new ForbiddenException('Authentification requise.');
     }
-    if (user.role === 'ADMIN') {
-      return true;
-    }
 
-    const project = await this.prisma.project.findUnique({
-      where: { id: paramOf(request, 'id') ?? '' },
-      select: { ownerId: true, clubId: true },
-    });
-    if (!project) {
+    const autorise = await aAutoriteSurProjet(
+      this.prisma,
+      user,
+      paramOf(request, 'id') ?? '',
+    );
+    if (autorise === null) {
       throw new NotFoundException('Projet non trouvé');
     }
-    if (project.ownerId === user.id) {
-      return true;
+    if (!autorise) {
+      throw new ForbiddenException(
+        "Vous n'êtes pas autorisé à modifier ce projet.",
+      );
     }
-    if (project.clubId) {
-      const club = await this.prisma.club.findUnique({
-        where: { id: project.clubId },
-        select: { responsibleId: true },
-      });
-      if (club?.responsibleId === user.id) {
-        return true;
-      }
-    }
-    throw new ForbiddenException(
-      "Vous n'êtes pas autorisé à modifier ce projet.",
-    );
+    return true;
   }
 }

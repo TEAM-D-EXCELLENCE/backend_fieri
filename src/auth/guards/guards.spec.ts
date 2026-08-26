@@ -1,8 +1,13 @@
-import { ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  ExecutionContext,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ClubManagerGuard } from './club-manager.guard';
 import { ResourceOwnerGuard } from './resource-owner.guard';
 import { ProjectWriteGuard } from './project-write.guard';
+import { TaskWriteGuard } from './task-write.guard';
 import { EventManagerGuard } from './event-manager.guard';
 import { MemberGovernanceGuard } from './member-governance.guard';
 import { UniversityChiefGuard } from './university-chief.guard';
@@ -458,5 +463,82 @@ describe('UniversityPostGuard', () => {
         ctx(ADMIN, { id: '7' }),
       ),
     ).resolves.toBe(true);
+  });
+});
+
+describe('TaskWriteGuard', () => {
+  /** Prisma minimal : une tâche, son projet, éventuellement son club. */
+  const prisma = (
+    task: { projectId: string } | null,
+    project: { ownerId: number; clubId: string | null } | null,
+    responsibleId: number | null = null,
+  ) =>
+    ({
+      task: { findUnique: jest.fn().mockResolvedValue(task) },
+      project: { findUnique: jest.fn().mockResolvedValue(project) },
+      club: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(responsibleId === null ? null : { responsibleId }),
+      },
+    }) as never;
+
+  it('autorise le porteur du projet qui porte la tâche', async () => {
+    const p = prisma({ projectId: 'p1' }, { ownerId: 7, clubId: null });
+    await expect(
+      new TaskWriteGuard(p).canActivate(ctx(MEMBRE, { id: 't1' })),
+    ).resolves.toBe(true);
+  });
+
+  it('autorise le responsable du club porteur', async () => {
+    const p = prisma({ projectId: 'p1' }, { ownerId: 99, clubId: 'c1' }, 7);
+    await expect(
+      new TaskWriteGuard(p).canActivate(ctx(MEMBRE, { id: 't1' })),
+    ).resolves.toBe(true);
+  });
+
+  it('refuse un chef de projet étranger au projet', async () => {
+    const p = prisma({ projectId: 'p1' }, { ownerId: 99, clubId: null });
+    await expect(
+      new TaskWriteGuard(p).canActivate(ctx(MEMBRE, { id: 't1' })),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('signale une tâche inexistante plutôt que de refuser', async () => {
+    const p = prisma(null, null);
+    await expect(
+      new TaskWriteGuard(p).canActivate(ctx(MEMBRE, { id: 't1' })),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('à la création, lit le projet dans le corps', async () => {
+    const p = prisma(null, { ownerId: 7, clubId: null });
+    await expect(
+      new TaskWriteGuard(p).canActivate(ctx(MEMBRE, {}, { projectId: 'p1' })),
+    ).resolves.toBe(true);
+  });
+
+  it('refuse une création sans projet désigné', async () => {
+    const p = prisma(null, null);
+    await expect(
+      new TaskWriteGuard(p).canActivate(ctx(MEMBRE, {}, {})),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('ignore un projectId du corps qui contredit la tâche de l’URL', async () => {
+    // La tâche appartient à « p-autrui » ; le corps prétend « p-a-moi ».
+    // Le garde doit juger le projet réel, pas celui que la requête annonce.
+    const p = prisma({ projectId: 'p-autrui' }, { ownerId: 99, clubId: null });
+    await expect(
+      new TaskWriteGuard(p).canActivate(
+        ctx(MEMBRE, { id: 't1' }, { projectId: 'p-a-moi' }),
+      ),
+    ).rejects.toThrow(ForbiddenException);
+    expect(
+      (p as unknown as { project: { findUnique: jest.Mock } }).project
+        .findUnique,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'p-autrui' } }),
+    );
   });
 });
