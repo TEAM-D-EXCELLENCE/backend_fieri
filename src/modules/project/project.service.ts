@@ -15,8 +15,27 @@ export class ProjectService {
     search?: string,
     page?: number,
     limit?: number,
+    diriges?: boolean,
+    role?: string,
   ) {
     const whereClause: Prisma.ProjectWhereInput = {};
+
+    // `diriges` : les projets sur lesquels le membre a autorité — les siens et
+    // ceux du club qu'il préside. Même définition que `autoriteSurProjet`, pour
+    // qu'un écran ne propose pas des projets que le serveur refusera ensuite.
+    // Sans compte, la restriction ne peut désigner personne : liste vide.
+    if (diriges && role !== 'ADMIN') {
+      whereClause.AND = memberId
+        ? [
+            {
+              OR: [
+                { ownerId: memberId },
+                { club: { responsibleId: memberId } },
+              ],
+            },
+          ]
+        : [{ id: { in: [] } }];
+    }
 
     if (clubId) {
       whereClause.clubId = clubId;

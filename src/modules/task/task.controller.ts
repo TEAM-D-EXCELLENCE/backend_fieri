@@ -12,14 +12,14 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
-import { TaskWriteGuard } from '../../auth/guards';
+import { TaskReadGuard, TaskWriteGuard } from '../../auth/guards';
 import { TaskService } from './task.service';
 
 @Controller('tasks')
 export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), TaskReadGuard)
   @Get('project/:projectId')
   async getProjectTasks(@Param('projectId') projectId: string) {
     return this.taskService.getTasksByProject(projectId);

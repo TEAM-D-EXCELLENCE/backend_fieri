@@ -8,6 +8,7 @@ import { ClubManagerGuard } from './club-manager.guard';
 import { ResourceOwnerGuard } from './resource-owner.guard';
 import { ProjectWriteGuard } from './project-write.guard';
 import { TaskWriteGuard } from './task-write.guard';
+import { TaskReadGuard } from './task-read.guard';
 import { EventManagerGuard } from './event-manager.guard';
 import { MemberGovernanceGuard } from './member-governance.guard';
 import { UniversityChiefGuard } from './university-chief.guard';
@@ -237,6 +238,7 @@ describe('ProjectWriteGuard', () => {
         findUnique: jest.fn().mockResolvedValue({ ownerId: 99, clubId: 'c1' }),
       },
       club: { findUnique: jest.fn().mockResolvedValue({ responsibleId: 55 }) },
+      clubMembership: { findUnique: jest.fn().mockResolvedValue(null) },
     } as never;
     await expect(
       new ProjectWriteGuard(p).canActivate(ctx(MEMBRE, { id: 'p1' })),
@@ -472,6 +474,7 @@ describe('TaskWriteGuard', () => {
     task: { projectId: string } | null,
     project: { ownerId: number; clubId: string | null } | null,
     responsibleId: number | null = null,
+    adhesion: string | null = null,
   ) =>
     ({
       task: { findUnique: jest.fn().mockResolvedValue(task) },
@@ -480,6 +483,11 @@ describe('TaskWriteGuard', () => {
         findUnique: jest
           .fn()
           .mockResolvedValue(responsibleId === null ? null : { responsibleId }),
+      },
+      clubMembership: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(adhesion === null ? null : { status: adhesion }),
       },
     }) as never;
 
@@ -495,6 +503,18 @@ describe('TaskWriteGuard', () => {
     await expect(
       new TaskWriteGuard(p).canActivate(ctx(MEMBRE, { id: 't1' })),
     ).resolves.toBe(true);
+  });
+
+  it('refuse un membre approuvé du club : il lit, il ne décide pas', async () => {
+    const p = prisma(
+      { projectId: 'p1' },
+      { ownerId: 99, clubId: 'c1' },
+      55,
+      'APPROVED',
+    );
+    await expect(
+      new TaskWriteGuard(p).canActivate(ctx(MEMBRE, { id: 't1' })),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('refuse un chef de projet étranger au projet', async () => {
@@ -540,5 +560,70 @@ describe('TaskWriteGuard', () => {
     ).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'p-autrui' } }),
     );
+  });
+});
+
+describe('TaskReadGuard', () => {
+  const prisma = (
+    project: { ownerId: number; clubId: string | null } | null,
+    responsibleId: number | null = null,
+    adhesion: string | null = null,
+  ) =>
+    ({
+      project: { findUnique: jest.fn().mockResolvedValue(project) },
+      club: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(responsibleId === null ? null : { responsibleId }),
+      },
+      clubMembership: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValue(adhesion === null ? null : { status: adhesion }),
+      },
+    }) as never;
+
+  it('ouvre le tableau au porteur du projet', async () => {
+    const p = prisma({ ownerId: 7, clubId: null });
+    await expect(
+      new TaskReadGuard(p).canActivate(ctx(MEMBRE, { projectId: 'p1' })),
+    ).resolves.toBe(true);
+  });
+
+  it('ouvre le tableau à un membre approuvé du club porteur', async () => {
+    const p = prisma({ ownerId: 99, clubId: 'c1' }, 55, 'APPROVED');
+    await expect(
+      new TaskReadGuard(p).canActivate(ctx(MEMBRE, { projectId: 'p1' })),
+    ).resolves.toBe(true);
+  });
+
+  it('refuse une adhésion encore en attente', async () => {
+    const p = prisma({ ownerId: 99, clubId: 'c1' }, 55, 'PENDING');
+    await expect(
+      new TaskReadGuard(p).canActivate(ctx(MEMBRE, { projectId: 'p1' })),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('refuse un tiers sur un projet sans club', async () => {
+    const p = prisma({ ownerId: 99, clubId: null });
+    await expect(
+      new TaskReadGuard(p).canActivate(ctx(MEMBRE, { projectId: 'p1' })),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('refuse un visiteur sans compte', async () => {
+    await expect(
+      new TaskReadGuard(prisma(null)).canActivate(
+        ctx(undefined, { projectId: 'p1' }),
+      ),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('signale un projet inexistant', async () => {
+    await expect(
+      new TaskReadGuard(prisma(null)).canActivate(
+        ctx(MEMBRE, { projectId: 'p1' }),
+      ),
+    ).rejects.toThrow(NotFoundException);
   });
 });

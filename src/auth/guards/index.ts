@@ -6,6 +6,7 @@ export * from './project-club-member.guard';
 export * from './project-write.guard';
 export * from './project-authority';
 export * from './task-write.guard';
+export * from './task-read.guard';
 export * from './resource-owner.guard';
 export * from './resource-owner.decorator';
 export * from './request-params';

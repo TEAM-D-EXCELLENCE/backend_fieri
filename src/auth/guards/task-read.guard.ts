@@ -11,14 +11,14 @@ import { paramOf } from './request-params';
 import { autoriteSurProjet } from './project-authority';
 
 /**
- * Autorise la modification ou la suppression d'un projet : son porteur, le
- * responsable du club auquel il est rattaché, ou un ADMIN.
+ * Ouvre le tableau des tâches d'un projet à ceux qui y travaillent.
  *
- * Se combine avec `@Roles(...)`, qui filtre en amont *qui* peut toucher aux
- * projets ; ce garde décide *quels* projets.
+ * Un projet est public ; l'organisation de son travail ne l'est pas — qui fait
+ * quoi, ce qui traîne, ce qui reste. La lecture suit donc la même règle que
+ * l'écriture, élargie aux membres approuvés du club porteur.
  */
 @Injectable()
-export class ProjectWriteGuard implements CanActivate {
+export class TaskReadGuard implements CanActivate {
   constructor(private prisma: PrismaService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -31,14 +31,14 @@ export class ProjectWriteGuard implements CanActivate {
     const autorite = await autoriteSurProjet(
       this.prisma,
       user,
-      paramOf(request, 'id') ?? '',
+      paramOf(request, 'projectId') ?? '',
     );
     if (autorite === null) {
       throw new NotFoundException('Projet non trouvé');
     }
-    if (autorite !== 'ecriture') {
+    if (autorite === 'aucune') {
       throw new ForbiddenException(
-        "Vous n'êtes pas autorisé à modifier ce projet.",
+        "Le tableau des tâches est réservé à l'équipe du projet.",
       );
     }
     return true;

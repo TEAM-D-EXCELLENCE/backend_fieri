@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import type { OptionalAuthRequest } from '../authenticated-request';
 import { paramOf } from './request-params';
-import { aAutoriteSurProjet } from './project-authority';
+import { autoriteSurProjet } from './project-authority';
 
 /**
  * Autorise l'écriture d'une tâche selon le projet qui la porte.
@@ -52,11 +52,11 @@ export class TaskWriteGuard implements CanActivate {
       }
     }
 
-    const autorise = await aAutoriteSurProjet(this.prisma, user, projectId);
-    if (autorise === null) {
+    const autorite = await autoriteSurProjet(this.prisma, user, projectId);
+    if (autorite === null) {
       throw new NotFoundException('Projet non trouvé');
     }
-    if (!autorise) {
+    if (autorite !== 'ecriture') {
       throw new ForbiddenException(
         "Vous n'êtes pas autorisé à gérer les tâches de ce projet.",
       );

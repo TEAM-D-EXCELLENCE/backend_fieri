@@ -34,6 +34,7 @@ export class ProjectController {
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('diriges') diriges?: string,
   ) {
     const memberId = req.user ? req.user.id : undefined;
     const pageNum = page ? parseInt(page, 10) : undefined;
@@ -45,6 +46,8 @@ export class ProjectController {
       search,
       pageNum,
       limitNum,
+      diriges === 'true',
+      req.user?.role,
     );
   }
 
