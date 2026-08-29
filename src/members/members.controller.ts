@@ -35,8 +35,26 @@ export class MembersController {
     };
   }
 
+  /**
+   * Annuaire des membres.
+   *
+   * Cette route n'avait AUCUNE garde : elle distribuait l'adresse e-mail de
+   * tous les membres a qui la demandait, sans authentification. L'inventaire
+   * la documentait pourtant en ADMIN.
+   *
+   * Elle exige desormais un compte, et l'adresse e-mail n'est jointe qu'a qui
+   * exerce une responsabilite — c'est la capacite `directory:viewContacts` du
+   * front, portee ici par le serveur. La fermer completement aurait casse deux
+   * ecrans legitimes : l'affectation des taches d'un projet a besoin des NOMS
+   * des membres, pas de leurs coordonnees, tandis que l'annuaire de
+   * l'universite et les figures emblematiques ont besoin des deux.
+   *
+   * Le public, lui, passe par `GET /governance/leaders`.
+   */
+  @UseGuards(AuthGuard('jwt'))
   @Get()
   async getMembers(
+    @Request() req: AuthenticatedRequest,
     @Query('search') search?: string,
     @Query('role') role?: string,
     @Query('page') page?: string,
@@ -49,6 +67,7 @@ export class MembersController {
       role,
       page: pageNum,
       limit: limitNum,
+      viewerId: req.user.id,
     });
   }
 

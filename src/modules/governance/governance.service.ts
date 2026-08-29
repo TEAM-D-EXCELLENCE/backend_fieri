@@ -285,6 +285,73 @@ export class GovernanceService {
   /**
    * Récupère la liste des figures emblématiques (isEmblematic = true).
    */
+  /**
+   * Annuaire PUBLIC des responsables — qui dirige quoi, et ou.
+   *
+   * La page « Organisation CITE » reconstituait cette liste depuis
+   * `GET /members`, reserve a l'ADMIN : un visiteur comme un membre ordinaire
+   * y recevaient un 403, et la page restait vide pour tout le monde sauf un
+   * administrateur. Elle affichait pourtant une information publique — les
+   * noms des responsables d'universite et de club.
+   *
+   * Cet endpoint ne renvoie QUE les personnes qui detiennent effectivement une
+   * responsabilite : un poste d'universite, un poste de pays, la direction
+   * d'un club, ou la distinction de figure emblematique. Pas l'annuaire
+   * entier, et surtout pas les adresses e-mail.
+   */
+  async listLeaders() {
+    const members = await this.prisma.member.findMany({
+      where: {
+        isActive: true,
+        deletionRequested: false,
+        OR: [
+          { universityPost: { isNot: null } },
+          { countryPost: { isNot: null } },
+          { responsibleOfClubs: { some: {} } },
+          { isEmblematic: true },
+        ],
+      },
+      select: {
+        id: true,
+        firstname: true,
+        lastname: true,
+        role: true,
+        bio: true,
+        avatarUrl: true,
+        isEmblematic: true,
+        branchId: true,
+        universityPost: { select: { post: true, universityId: true } },
+        countryPost: { select: { post: true, countryId: true } },
+        responsibleOfClubs: { select: { id: true } },
+      },
+      orderBy: { lastname: 'asc' },
+    });
+
+    return {
+      success: true,
+      data: members.map((m) => ({
+        id: m.id,
+        firstName: m.firstname,
+        lastName: m.lastname,
+        role: m.role,
+        bio: m.bio,
+        avatarUrl: m.avatarUrl,
+        isEmblematic: m.isEmblematic,
+        branchId: m.branchId,
+        universityPost: m.universityPost
+          ? {
+              post: m.universityPost.post,
+              universityId: m.universityPost.universityId,
+            }
+          : null,
+        countryPost: m.countryPost
+          ? { post: m.countryPost.post, countryId: m.countryPost.countryId }
+          : null,
+        responsibleClubIds: m.responsibleOfClubs.map((c) => c.id),
+      })),
+    };
+  }
+
   async listEmblematicMembers(universityId?: number) {
     const where: Prisma.MemberWhereInput = {
       isEmblematic: true,
@@ -300,7 +367,6 @@ export class GovernanceService {
         id: true,
         firstname: true,
         lastname: true,
-        email: true,
         role: true,
         bio: true,
         avatarUrl: true,
@@ -317,10 +383,12 @@ export class GovernanceService {
 
     return {
       success: true,
+      // Pas d'adresse e-mail : cette liste est publique, et aucun ecran ne
+      // s'en sert. Une page de presentation n'a pas a distribuer les
+      // coordonnees des personnes qu'elle presente.
       data: members.map((m) => ({
         id: m.id,
         name: `${m.firstname} ${m.lastname}`,
-        email: m.email,
         role: m.role,
         bio: m.bio,
         avatarUrl: m.avatarUrl,
