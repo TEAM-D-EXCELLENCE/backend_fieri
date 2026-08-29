@@ -123,6 +123,8 @@ model Member {
   organizedEvents      Event[]               @relation("EventOrganizer")
 
   // Challenges & hackathons (Module 3)
+  newsletterSubscription NewsletterSubscriber?
+
   createdChallenges    Challenge[]           @relation("ChallengeCreator")
   challengeSubmissions ChallengeSubmission[]
   createdHackathons    Hackathon[]           @relation("HackathonCreator")
@@ -674,4 +676,29 @@ model ActivityReport {
   content      String     // narratif des activités et travaux de recherche
 
   createdAt    DateTime   @default(now())
+}
+
+/// Abonnes a la lettre d'information.
+///
+/// Le formulaire du pied de page attendait 800 ms puis affichait « Abonnement
+/// valide » sans rien enregistrer nulle part. Les adresses atterrissent ici.
+///
+/// `memberId` est facultatif : on s'abonne sans compte, depuis le site public.
+/// Un desabonnement ne supprime pas la ligne — il la date, pour ne pas
+/// re-solliciter quelqu'un qui est deja parti.
+model NewsletterSubscriber {
+  id             Int       @id @default(autoincrement())
+  email          String    @unique
+  /// D'ou vient l'abonnement : footer, inscription, banniere.
+  source         String    @default("footer")
+
+  memberId       Int?      @unique
+  member         Member?   @relation(fields: [memberId], references: [id])
+
+  unsubscribedAt DateTime?
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([unsubscribedAt])
 }
