@@ -53,9 +53,45 @@ Copier `.env.example` en `.env` puis renseigner chaque groupe :
 
 ## Déploiement (Vercel)
 
-Le build Vercel est géré par le script `vercel-build` : `prisma db push --accept-data-loss && prisma generate && nest build`.
+Le build Vercel est géré par le script `vercel-build` :
+`prisma migrate deploy && prisma generate && nest build`.
 
-En production, privilégier les migrations versionnées (`prisma/migrations/`) via `npx prisma migrate deploy` avant de démarrer l'application.
+Les migrations versionnées (`prisma/migrations/`) sont donc appliquées **avant**
+la compilation. Une migration qui échoue fait échouer le build : c'est
+volontaire, l'application ne doit pas démarrer sur un schéma qu'elle ne connaît
+pas.
+
+### Erreur `P3005` au build — base jamais migrée
+
+Jusqu'au 19 août 2026, ce script utilisait `prisma db push --accept-data-loss`.
+Une base de production façonnée de cette manière contient toutes les tables mais
+aucune ligne dans `_prisma_migrations`. `prisma migrate deploy` refuse alors de
+travailler :
+
+```
+Error: P3005
+The database schema is not empty.
+```
+
+Le build échoue à sa toute première commande, et plus aucun changement serveur
+n'atteint la production — sans autre signal que le journal de build.
+
+La correction est un **baseline**, à faire une seule fois : déclarer appliquées
+les migrations que la base reflète déjà, sans rejouer leur SQL.
+
+```bash
+# 1. Voir l'état de la base et la liste des migrations
+DATABASE_URL='postgresql://…' ./scripts/baseline-production.sh --liste
+
+# 2. Marquer appliquées celles que la base contient déjà, puis déployer le reste
+DATABASE_URL='postgresql://…' ./scripts/baseline-production.sh \
+  --jusqu-a 20260819000000_add_member_signature_url
+```
+
+⚠️ Ne marquez appliquée que ce que la base contient **réellement** : déclarer
+appliquée une migration dont les tables n'existent pas laisse un schéma
+incomplet que Prisma croira à jour. Le script termine par un contrôle de dérive
+et affiche le SQL de rattrapage s'il en reste.
 
 ## Structure
 
