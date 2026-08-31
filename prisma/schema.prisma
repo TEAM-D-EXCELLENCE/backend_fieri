@@ -214,6 +214,11 @@ model ClubMembership {
   member   Member @relation(fields: [memberId], references: [id])
   status   String @default("PENDING") // PENDING, APPROVED, REJECTED
 
+  /// Ce que la personne dit en demandant a rejoindre le club, et comment la
+  /// joindre. Sans eux, le responsable ne decidait que sur un nom.
+  motivation      String?
+  contact         String?
+
   // Espace club : rôle interne, entretien d'admission, carte de membre
   role            String    @default("MEMBRE") // "MEMBRE" | "RESPONSABLE"
   interviewAt     DateTime?

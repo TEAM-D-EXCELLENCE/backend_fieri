@@ -201,7 +201,11 @@ export class ClubService {
 
   // --- MEMBERSHIPS ENDPOINTS ---
 
-  async createMembershipRequest(clubId: string, memberId: number) {
+  async createMembershipRequest(
+    clubId: string,
+    memberId: number,
+    data: { motivation?: string; contact?: string } = {},
+  ) {
     const club = await this.prisma.club.findUnique({
       where: { id: clubId },
     });
@@ -224,6 +228,9 @@ export class ClubService {
       throw new ConflictException('Vous êtes déjà membre approuvé de ce club.');
     }
 
+    const motivation = data.motivation?.trim() || null;
+    const contact = data.contact?.trim() || null;
+
     const membership = await this.prisma.clubMembership.upsert({
       where: {
         clubId_memberId: {
@@ -231,13 +238,20 @@ export class ClubService {
           memberId,
         },
       },
+      // Une nouvelle demande apres un refus remplace l'ancienne : c'est le
+      // texte qu'on vient d'ecrire que le responsable doit lire, pas celui de
+      // la tentative precedente.
       update: {
         status: 'PENDING',
+        motivation,
+        contact,
       },
       create: {
         clubId,
         memberId,
         status: 'PENDING',
+        motivation,
+        contact,
       },
     });
 
@@ -263,14 +277,20 @@ export class ClubService {
       },
     });
 
+    // Le responsable decide : il lui faut de quoi decider. Le nom seul ne
+    // suffisait pas — ni pour reconnaitre la personne, ni pour la joindre.
     const data = requests.map((r) => ({
       id: r.id,
       clubId: r.clubId,
       status: r.status,
+      motivation: r.motivation,
+      contact: r.contact,
+      createdAt: r.createdAt,
       user: {
         id: r.member.id,
         firstName: r.member.firstname,
         lastName: r.member.lastname,
+        email: r.member.email,
       },
     }));
 
