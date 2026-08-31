@@ -29,6 +29,7 @@ import { GovernanceModule } from './modules/governance/governance.module';
 import { ClubSpaceModule } from './modules/club-space/club-space.module';
 import { CompetitionModule } from './modules/competition/competition.module';
 import { NewsletterModule } from './modules/newsletter/newsletter.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { NewsletterModule } from './modules/newsletter/newsletter.module';
     ClubSpaceModule,
     CompetitionModule,
     NewsletterModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -59,7 +59,14 @@ export class NewsController {
   @Post()
   async createNews(
     @Request() req: AuthenticatedRequest,
-    @Body() data: { title: string; content: string; category: string },
+    @Body()
+    data: {
+      title: string;
+      content: string;
+      category: string;
+      excerpt?: string;
+      imageUrl?: string;
+    },
   ) {
     return this.newsService.createNews(req.user.id, data);
   }

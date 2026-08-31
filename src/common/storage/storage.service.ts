@@ -131,6 +131,43 @@ export class StorageService {
     }
   }
 
+  /**
+   * Lit un fichier par sa CLÉ (`<subdir>/<nom>`), et non par son URL.
+   *
+   * En mode S3, `save()` renvoie une URL présignée qui expire au bout d'une
+   * heure : parfaitement adaptée à un PDF qu'on télécharge dans la foulée,
+   * inutilisable pour une photo de profil ou l'illustration d'un article, que
+   * l'on range en base et que l'on réaffiche des mois plus tard. Les images
+   * sont donc servies par une route stable qui lit ici, par clé.
+   */
+  async readByKey(key: string): Promise<Buffer | null> {
+    const safeKey = key.replace(/\.\.(\/|\\)/g, '').replace(/^\/+/, '');
+    if (!safeKey) {
+      return null;
+    }
+
+    if (this.s3Client) {
+      try {
+        const res = await this.s3Client.send(
+          new GetObjectCommand({ Bucket: this.bucket, Key: safeKey }),
+        );
+        const bytes = res.Body ? await res.Body.transformToByteArray() : null;
+        return bytes ? Buffer.from(bytes) : null;
+      } catch (err) {
+        this.logger.warn(
+          `Objet S3 introuvable pour la clé ${safeKey} : ${(err as Error).message}`,
+        );
+        return null;
+      }
+    }
+
+    try {
+      return await fs.readFile(join(this.baseDir, safeKey));
+    } catch {
+      return null;
+    }
+  }
+
   /** Lit le contenu d'un fichier précédemment stocké, via son URL publique. */
   async readByUrl(url: string): Promise<Buffer | null> {
     if (this.s3Client) {

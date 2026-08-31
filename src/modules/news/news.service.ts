@@ -56,6 +56,8 @@ export class NewsService {
       content: n.content,
       status: n.status,
       category: n.category,
+      excerpt: n.excerpt,
+      imageUrl: n.imageUrl,
       author: {
         id: n.author.id,
         firstName: n.author.firstname,
@@ -103,6 +105,8 @@ export class NewsService {
         content: news.content,
         status: news.status,
         category: news.category,
+        excerpt: news.excerpt,
+        imageUrl: news.imageUrl,
         author: {
           id: news.author.id,
           firstName: news.author.firstname,
@@ -115,13 +119,24 @@ export class NewsService {
 
   async createNews(
     authorId: number,
-    data: { title: string; content: string; category: string },
+    data: {
+      title: string;
+      content: string;
+      category: string;
+      excerpt?: string;
+      imageUrl?: string;
+    },
   ) {
+    // `excerpt` et `imageUrl` etaient envoyes par le formulaire depuis le
+    // debut et jetes ici faute de colonne : le resume saisi disparaissait, et
+    // l'illustration choisie n'avait aucun effet.
     const news = await this.prisma.news.create({
       data: {
         title: data.title,
         content: data.content,
         category: data.category,
+        excerpt: data.excerpt?.trim() || null,
+        imageUrl: data.imageUrl?.trim() || null,
         status: 'PENDING',
         authorId,
       },
