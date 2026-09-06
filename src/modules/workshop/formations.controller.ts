@@ -10,11 +10,52 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  MinLength,
+} from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { WorkshopService } from './workshop.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+
+class CreateFormationDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  instructor!: string;
+
+  @IsInt()
+  @Min(0)
+  capacity!: number;
+}
+
+class UpdateFormationDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  instructor?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  capacity?: number;
+}
 
 @Controller('formations')
 export class FormationsController {
@@ -39,7 +80,7 @@ export class FormationsController {
   @Roles('CHERCHEUR', 'ADMIN')
   @Post()
   async createFormation(
-    @Body() data: { title: string; instructor: string; capacity: number },
+    @Body() data: CreateFormationDto,
   ) {
     return this.workshopService.createWorkshop(data);
   }
@@ -49,8 +90,7 @@ export class FormationsController {
   @Put(':id')
   async updateFormation(
     @Param('id') id: string,
-    @Body()
-    data: Partial<{ title: string; instructor: string; capacity: number }>,
+    @Body() data: UpdateFormationDto,
   ) {
     return this.workshopService.updateWorkshop(id, data);
   }

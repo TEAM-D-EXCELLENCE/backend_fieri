@@ -1,7 +1,9 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import type { LoginDto, RegisterDto } from './auth.dto';
+// Import de VALEUR (pas `type`) : le ValidationPipe a besoin de la classe à
+// l'exécution pour lire ses décorateurs.
+import { LoginDto, RegisterDto } from './auth.dto';
 
 @Controller('auth')
 export class AuthController {

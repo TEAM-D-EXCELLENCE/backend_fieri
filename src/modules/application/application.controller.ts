@@ -8,11 +8,35 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import {
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { ApplicationService } from './application.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+
+class SubmitApplicationDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  opportunityId!: string;
+
+  // Lettre et CV peuvent être vides (candidature express) : optionnels et bornés.
+  @IsOptional()
+  @IsString()
+  @MaxLength(10000)
+  coverLetter?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  cvUrl?: string;
+}
 
 @Controller('applications')
 export class ApplicationController {
@@ -22,9 +46,13 @@ export class ApplicationController {
   @Post()
   async submitApplication(
     @Request() req: AuthenticatedRequest,
-    @Body() data: { opportunityId: string; coverLetter: string; cvUrl: string },
+    @Body() data: SubmitApplicationDto,
   ) {
-    return this.applicationService.submitApplication(req.user.id, data);
+    return this.applicationService.submitApplication(req.user.id, {
+      opportunityId: data.opportunityId,
+      coverLetter: data.coverLetter ?? '',
+      cvUrl: data.cvUrl ?? '',
+    });
   }
 
   @UseGuards(AuthGuard('jwt'))

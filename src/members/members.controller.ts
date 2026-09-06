@@ -17,6 +17,20 @@ import { RolesGuard } from '../auth/roles.guard';
 import { MembersService } from './members.service';
 import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
+/** Parse un entier de query-string en le bornant, avec repli sûr si absent/invalide. */
+function clampInt(
+  raw: string | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  const n = Number.parseInt(raw ?? '', 10);
+  if (!Number.isFinite(n)) {
+    return fallback;
+  }
+  return Math.min(Math.max(n, min), max);
+}
+
 @Controller('members')
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
@@ -60,8 +74,10 @@ export class MembersController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const pageNum = parseInt(page || '1', 10);
-    const limitNum = parseInt(limit || '20', 10);
+    // Bornes sûres : un `page`/`limit` non numérique tombait en erreur 500, et
+    // un `limit` géant permettait de vider la table en une requête.
+    const pageNum = clampInt(page, 1, 1, Number.MAX_SAFE_INTEGER);
+    const limitNum = clampInt(limit, 20, 1, 100);
     return this.membersService.getMembers({
       search,
       role,

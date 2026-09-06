@@ -15,7 +15,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { UniversityPostGuard } from '../../auth/university-post.guard';
 import { UniversityPosts } from '../../auth/university-post.decorator';
 import { CertificateService } from './certificate.service';
-import type { IssueCertificateDto } from './certificate.service';
+import { IssueCertificateDto } from './certificate.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 import { UniversityChiefGuard } from '../../auth/guards';
 

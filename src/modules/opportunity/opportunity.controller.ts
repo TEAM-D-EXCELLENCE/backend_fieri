@@ -10,12 +10,74 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { OpportunityService } from './opportunity.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 import { ResourceOwner, ResourceOwnerGuard } from '../../auth/guards';
+
+class CreateOpportunityDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(10000)
+  description!: string;
+
+  @IsString()
+  @MaxLength(60)
+  type!: string;
+
+  @IsString()
+  @MaxLength(120)
+  discipline!: string;
+
+  @IsOptional()
+  @IsNumber()
+  salary?: number;
+}
+
+class UpdateOpportunityDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10000)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  type?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  discipline?: string;
+
+  @IsOptional()
+  @IsNumber()
+  salary?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  status?: string;
+}
 
 @Controller('opportunities')
 export class OpportunityController {
@@ -44,14 +106,7 @@ export class OpportunityController {
   @Post()
   async createOpportunity(
     @Request() req: AuthenticatedRequest,
-    @Body()
-    data: {
-      title: string;
-      description: string;
-      type: string;
-      discipline: string;
-      salary?: number;
-    },
+    @Body() data: CreateOpportunityDto,
   ) {
     return this.opportunityService.createOpportunity(req.user.id, data);
   }
@@ -63,15 +118,7 @@ export class OpportunityController {
   async updateOpportunity(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body()
-    data: Partial<{
-      title: string;
-      description: string;
-      type: string;
-      discipline: string;
-      salary: number;
-      status: string;
-    }>,
+    @Body() data: UpdateOpportunityDto,
   ) {
     return this.opportunityService.updateOpportunity(
       id,

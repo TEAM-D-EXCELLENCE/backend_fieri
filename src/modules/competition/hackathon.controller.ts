@@ -12,7 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { UniversityPostGuard } from '../../auth/university-post.guard';
 import { UniversityPosts } from '../../auth/university-post.decorator';
 import { HackathonService } from './hackathon.service';
-import type { CreateHackathonDto } from './hackathon.service';
+import { CreateHackathonDto } from './hackathon.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller()

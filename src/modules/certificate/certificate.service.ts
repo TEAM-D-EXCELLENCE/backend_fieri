@@ -4,15 +4,26 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { IsInt, IsString, MaxLength, MinLength } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StorageService } from '../../common/storage/storage.service';
 import { MailService } from '../../common/mail/mail.service';
 import { PdfService } from '../../common/pdf/pdf.service';
 
-export interface IssueCertificateDto {
-  recipientId: number;
-  title: string;
-  category: string;
+export class IssueCertificateDto {
+  @IsInt()
+  recipientId!: number;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  // La liste blanche métier (FORMATION/MANDAT/PROJET) reste vérifiée dans le
+  // service ; ici on ne garantit que le type et une borne.
+  @IsString()
+  @MaxLength(40)
+  category!: string;
 }
 
 export interface UploadedSignature {
@@ -103,25 +114,18 @@ export class CertificateService {
       throw new NotFoundException('Université introuvable.');
     }
 
-    // Auto-fallback pour la signature si non renseignée au profil
-    let currentSignatureUrl = issuer.signatureUrl;
-    if (!currentSignatureUrl) {
-      currentSignatureUrl =
-        'https://ui-avatars.com/api/?name=Signature+Officielle&background=0D8ABC&color=fff';
-      await this.prisma.member
-        .update({
-          where: { id: issuerId },
-          data: { signatureUrl: currentSignatureUrl },
-        })
-        .catch(() => null);
-    }
-
-    const signatureImage = currentSignatureUrl
-      ? ((await this.storage.readByUrl(currentSignatureUrl)) ?? undefined)
+    // Griffe officielle du Chef, si elle a été déposée sur son profil. Sans
+    // elle, l'attestation est émise sans image (avec un avertissement) plutôt
+    // que de fabriquer un placeholder via un service externe : aucun appel
+    // réseau tiers, aucune URL étrangère persistée sur le compte de l'émetteur.
+    // (L'ancien repli `ui-avatars.com` était en outre inopérant : `readByUrl`
+    // ne sait relire que les fichiers produits par le stockage interne.)
+    const signatureImage = issuer.signatureUrl
+      ? ((await this.storage.readByUrl(issuer.signatureUrl)) ?? undefined)
       : undefined;
     if (!signatureImage) {
       this.logger.warn(
-        `Signature introuvable au stockage pour l'émetteur ${issuerId} — émission sans image.`,
+        `Signature indisponible pour l'émetteur ${issuerId} — attestation émise sans griffe.`,
       );
     }
 

@@ -11,6 +11,12 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import {
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
@@ -21,6 +27,61 @@ import type {
   OptionalAuthRequest,
 } from '../../auth/authenticated-request';
 import { ResourceOwner, ResourceOwnerGuard } from '../../auth/guards';
+
+class CreateNewsDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(20000)
+  content!: string;
+
+  @IsString()
+  @MaxLength(60)
+  category!: string;
+
+  // Champs ajoutés en amont (synthèse de carte + illustration issue d'un upload).
+  // Déclarés ici pour que le `whitelist` ne les supprime pas silencieusement.
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  excerpt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  imageUrl?: string;
+}
+
+class UpdateNewsDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20000)
+  content?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  category?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  excerpt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  imageUrl?: string;
+}
 
 @Controller('news')
 export class NewsController {
@@ -59,14 +120,7 @@ export class NewsController {
   @Post()
   async createNews(
     @Request() req: AuthenticatedRequest,
-    @Body()
-    data: {
-      title: string;
-      content: string;
-      category: string;
-      excerpt?: string;
-      imageUrl?: string;
-    },
+    @Body() data: CreateNewsDto,
   ) {
     return this.newsService.createNews(req.user.id, data);
   }
@@ -92,7 +146,7 @@ export class NewsController {
   async updateNews(
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
-    @Body() data: Partial<{ title: string; content: string; category: string }>,
+    @Body() data: UpdateNewsDto,
   ) {
     return this.newsService.updateNews(id, req.user.id, req.user.role, data);
   }

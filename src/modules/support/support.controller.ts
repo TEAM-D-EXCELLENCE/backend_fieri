@@ -15,10 +15,9 @@ import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
 import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
 import { SupportService } from './support.service';
-import type {
-  InitiateFinancialDto,
-  SubmitPhysicalDto,
-} from './support.service';
+// Import de VALEUR : le ValidationPipe lit les décorateurs des classes DTO à
+// l'exécution.
+import { InitiateFinancialDto, SubmitPhysicalDto } from './support.service';
 
 /** Extrait l'IP publique approximative de l'appelant. */
 function extractIp(req: Request): string {

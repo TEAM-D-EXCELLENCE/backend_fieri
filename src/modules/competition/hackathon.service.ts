@@ -3,15 +3,42 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 
-export interface CreateHackathonDto {
-  title: string;
-  description: string;
+export class CreateHackathonDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(5000)
+  description!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
   theme?: string;
-  startDate: string;
-  endDate: string;
-  clubId: string;
+
+  @IsString()
+  @MaxLength(40)
+  startDate!: string;
+
+  @IsString()
+  @MaxLength(40)
+  endDate!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  clubId!: string;
 }
 
 @Injectable()

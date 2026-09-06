@@ -10,12 +10,52 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import {
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { ClubService } from './club.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 import { ClubFrom, ClubManagerGuard } from '../../auth/guards';
+
+class CreateClubDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  name!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  discipline!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  description?: string;
+}
+
+class UpdateClubDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  discipline?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  description?: string;
+}
 
 @Controller('clubs')
 export class ClubController {
@@ -41,12 +81,7 @@ export class ClubController {
   @Roles('ADMIN')
   @Post()
   async createClub(
-    @Body()
-    data: {
-      name: string;
-      discipline: string;
-      description?: string;
-    },
+    @Body() data: CreateClubDto,
   ) {
     return this.clubService.createClub(data);
   }
@@ -57,8 +92,7 @@ export class ClubController {
   @Put(':id')
   async updateClub(
     @Param('id') id: string,
-    @Body()
-    data: Partial<{ name: string; discipline: string; description: string }>,
+    @Body() data: UpdateClubDto,
   ) {
     return this.clubService.updateClub(id, data);
   }

@@ -10,6 +10,13 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
 import { Roles } from '../../auth/roles.decorator';
@@ -20,6 +27,80 @@ import type {
   OptionalAuthRequest,
 } from '../../auth/authenticated-request';
 import { ProjectClubMemberGuard, ProjectWriteGuard } from '../../auth/guards';
+
+// `team` reste un tableau libre (structure hétérogène validée dans le service) :
+// on garantit seulement que c'est bien un tableau, sans en filtrer le contenu.
+class CreateProjectDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(2000)
+  summary!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20000)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  status?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  technologies?: string[];
+
+  @IsOptional()
+  @IsArray()
+  team?: unknown[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  clubId?: string;
+}
+
+class UpdateProjectDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  summary?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20000)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  status?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  technologies?: string[];
+
+  @IsOptional()
+  @IsArray()
+  team?: unknown[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  clubId?: string;
+}
 
 @Controller('projects')
 export class ProjectController {
@@ -62,16 +143,7 @@ export class ProjectController {
   @Post()
   async createProject(
     @Request() req: AuthenticatedRequest,
-    @Body()
-    data: {
-      title: string;
-      summary: string;
-      description?: string;
-      status?: string;
-      technologies?: string[];
-      team?: any[];
-      clubId?: string;
-    },
+    @Body() data: CreateProjectDto,
   ) {
     return this.projectService.createProject(req.user.id, data);
   }
@@ -83,16 +155,7 @@ export class ProjectController {
   async updateProject(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body()
-    data: Partial<{
-      title: string;
-      summary: string;
-      description: string;
-      status: string;
-      technologies: string[];
-      team: any[];
-      clubId: string;
-    }>,
+    @Body() data: UpdateProjectDto,
   ) {
     return this.projectService.updateProject(
       id,
