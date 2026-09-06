@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 import type { PaginatedResponse } from '../../common/pagination';
@@ -83,7 +87,7 @@ export class NewsService {
     return result;
   }
 
-  async getNewsById(id: string) {
+  async getNewsById(id: string, viewerId?: number) {
     const news = await this.prisma.news.findUnique({
       where: { id },
       include: {
@@ -96,6 +100,8 @@ export class NewsService {
     if (!news) {
       throw new NotFoundException('Article non trouvé');
     }
+
+    const reactions = await this.reactionSummary(id, viewerId);
 
     return {
       success: true,
@@ -113,8 +119,59 @@ export class NewsService {
           lastName: news.author.lastname,
         },
         createdAt: news.createdAt,
+        ...reactions,
       },
     };
+  }
+
+  /** Compteurs de réactions d'un article, et celle du lecteur s'il est connu. */
+  private async reactionSummary(newsId: string, viewerId?: number) {
+    const [likeCount, dislikeCount, mine] = await Promise.all([
+      this.prisma.newsReaction.count({ where: { newsId, value: 'LIKE' } }),
+      this.prisma.newsReaction.count({ where: { newsId, value: 'DISLIKE' } }),
+      viewerId
+        ? this.prisma.newsReaction.findUnique({
+            where: { newsId_memberId: { newsId, memberId: viewerId } },
+            select: { value: true },
+          })
+        : Promise.resolve(null),
+    ]);
+    return { likeCount, dislikeCount, myReaction: mine?.value ?? null };
+  }
+
+  /**
+   * Réaction d'un membre à un article : « LIKE » (J'adore) ou « DISLIKE »
+   * (J'aime pas). Reposer la même réaction la retire (bascule), en choisir une
+   * autre la remplace. Renvoie les compteurs à jour.
+   */
+  async reactToNews(newsId: string, memberId: number, value: string) {
+    const v = (value ?? '').toUpperCase();
+    if (v !== 'LIKE' && v !== 'DISLIKE') {
+      throw new BadRequestException('Réaction invalide (LIKE ou DISLIKE).');
+    }
+    const news = await this.prisma.news.findUnique({
+      where: { id: newsId },
+      select: { id: true },
+    });
+    if (!news) {
+      throw new NotFoundException('Article non trouvé');
+    }
+
+    const existing = await this.prisma.newsReaction.findUnique({
+      where: { newsId_memberId: { newsId, memberId } },
+    });
+    if (existing && existing.value === v) {
+      // Même réaction reposée → on l'enlève.
+      await this.prisma.newsReaction.delete({ where: { id: existing.id } });
+    } else {
+      await this.prisma.newsReaction.upsert({
+        where: { newsId_memberId: { newsId, memberId } },
+        create: { newsId, memberId, value: v },
+        update: { value: v },
+      });
+    }
+
+    return { success: true, data: await this.reactionSummary(newsId, memberId) };
   }
 
   async createNews(

@@ -12,6 +12,7 @@ import {
   Request,
 } from '@nestjs/common';
 import {
+  IsIn,
   IsOptional,
   IsString,
   MaxLength,
@@ -83,6 +84,11 @@ class UpdateNewsDto {
   imageUrl?: string;
 }
 
+class ReactNewsDto {
+  @IsIn(['LIKE', 'DISLIKE'], { message: 'Réaction invalide (LIKE ou DISLIKE).' })
+  value!: string;
+}
+
 @Controller('news')
 export class NewsController {
   constructor(private readonly newsService: NewsService) {}
@@ -110,9 +116,26 @@ export class NewsController {
     );
   }
 
+  // JWT optionnel : un visiteur voit les compteurs, un membre connecté voit en
+  // plus SA réaction (pour afficher le bouton actif).
+  @UseGuards(OptionalJwtAuthGuard)
   @Get(':id')
-  async getNewsById(@Param('id') id: string) {
-    return this.newsService.getNewsById(id);
+  async getNewsById(
+    @Param('id') id: string,
+    @Request() req: OptionalAuthRequest,
+  ) {
+    return this.newsService.getNewsById(id, req.user?.id);
+  }
+
+  /** Réagir à un article : « J'adore » (LIKE) ou « J'aime pas » (DISLIKE). */
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/react')
+  async react(
+    @Param('id') id: string,
+    @Body() body: ReactNewsDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.newsService.reactToNews(id, req.user.id, body.value);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)
