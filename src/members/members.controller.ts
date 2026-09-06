@@ -14,12 +14,8 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { MembersService } from './members.service';
-import type {
-  AuthenticatedRequest,
-  OptionalAuthRequest,
-} from '../auth/authenticated-request';
+import type { AuthenticatedRequest } from '../auth/authenticated-request';
 
 /** Parse un entier de query-string en le bornant, avec repli sûr si absent/invalide. */
 function clampInt(
@@ -53,13 +49,26 @@ export class MembersController {
     };
   }
 
-  // Annuaire des membres. Ouvert sans connexion (l'app publique en a besoin pour
-  // les noms), mais l'e-mail — une donnée personnelle exploitable par les
-  // scrapers/spammeurs — n'est renvoyé qu'à un utilisateur AUTHENTIFIÉ.
-  @UseGuards(OptionalJwtAuthGuard)
+  /**
+   * Annuaire des membres.
+   *
+   * Cette route n'avait AUCUNE garde : elle distribuait l'adresse e-mail de
+   * tous les membres a qui la demandait, sans authentification. L'inventaire
+   * la documentait pourtant en ADMIN.
+   *
+   * Elle exige desormais un compte, et l'adresse e-mail n'est jointe qu'a qui
+   * exerce une responsabilite — c'est la capacite `directory:viewContacts` du
+   * front, portee ici par le serveur. La fermer completement aurait casse deux
+   * ecrans legitimes : l'affectation des taches d'un projet a besoin des NOMS
+   * des membres, pas de leurs coordonnees, tandis que l'annuaire de
+   * l'universite et les figures emblematiques ont besoin des deux.
+   *
+   * Le public, lui, passe par `GET /governance/leaders`.
+   */
+  @UseGuards(AuthGuard('jwt'))
   @Get()
   async getMembers(
-    @Request() req: OptionalAuthRequest,
+    @Request() req: AuthenticatedRequest,
     @Query('search') search?: string,
     @Query('role') role?: string,
     @Query('page') page?: string,
@@ -74,7 +83,7 @@ export class MembersController {
       role,
       page: pageNum,
       limit: limitNum,
-      includeEmail: !!req.user,
+      viewerId: req.user.id,
     });
   }
 

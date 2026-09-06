@@ -78,13 +78,47 @@ export class MembersService {
     };
   }
 
+  /**
+   * Qui peut lire les coordonnees de l'annuaire.
+   *
+   * Un ADMIN, et toute personne qui exerce une responsabilite : un poste
+   * d'universite, un poste de pays, ou la direction d'un club. Un membre
+   * ordinaire voit les NOMS — de quoi confier une tache — et rien de plus.
+   *
+   * C'est la capacite `directory:viewContacts` du front, tenue ici par le
+   * serveur : le front masquait, le serveur envoyait quand meme.
+   */
+  private async canViewContacts(memberId: number): Promise<boolean> {
+    const membre = await this.prisma.member.findUnique({
+      where: { id: memberId },
+      select: {
+        role: true,
+        universityPost: { select: { id: true } },
+        countryPost: { select: { id: true } },
+        responsibleOfClubs: { select: { id: true }, take: 1 },
+      },
+    });
+    if (!membre) return false;
+    return (
+      membre.role === 'ADMIN' ||
+      membre.universityPost !== null ||
+      membre.countryPost !== null ||
+      membre.responsibleOfClubs.length > 0
+    );
+  }
+
   async getMembers(params: {
     search?: string;
     role?: string;
     page: number;
     limit: number;
-    includeEmail?: boolean;
+    /** Le membre qui demande. Decide s'il voit les coordonnees. */
+    viewerId?: number;
   }) {
+    const withEmail = params.viewerId
+      ? await this.canViewContacts(params.viewerId)
+      : false;
+
     const where: Prisma.MemberWhereInput = {};
 
     if (params.search) {
@@ -122,8 +156,7 @@ export class MembersService {
         id: m.id,
         firstName: m.firstname,
         lastName: m.lastname,
-        // E-mail réservé aux appelants authentifiés (voir le contrôleur).
-        ...(params.includeEmail ? { email: m.email } : {}),
+        ...(withEmail ? { email: m.email } : {}),
         role: m.role,
         branchId: m.branchId,
         isEmblematic: m.isEmblematic,

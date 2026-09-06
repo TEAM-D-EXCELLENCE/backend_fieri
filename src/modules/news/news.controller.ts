@@ -42,6 +42,18 @@ class CreateNewsDto {
   @IsString()
   @MaxLength(60)
   category!: string;
+
+  // Champs ajoutés en amont (synthèse de carte + illustration issue d'un upload).
+  // Déclarés ici pour que le `whitelist` ne les supprime pas silencieusement.
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  excerpt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  imageUrl?: string;
 }
 
 class UpdateNewsDto {
@@ -59,6 +71,16 @@ class UpdateNewsDto {
   @IsString()
   @MaxLength(60)
   category?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  excerpt?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  imageUrl?: string;
 }
 
 @Controller('news')

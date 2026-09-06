@@ -66,6 +66,18 @@ export class GovernanceController {
     return this.governanceService.toggleEmblematic(id, body.isEmblematic);
   }
 
+  /**
+   * Annuaire public des responsables — postes d'université, postes de pays,
+   * responsables de club, figures emblématiques. Sans adresse e-mail.
+   *
+   * La page « Organisation CITE » passait par `GET /members`, réservé à
+   * l'ADMIN : elle restait vide pour un visiteur comme pour un membre.
+   */
+  @Get('governance/leaders')
+  async getLeaders() {
+    return this.governanceService.listLeaders();
+  }
+
   /** Liste publique des figures emblématiques de la communauté. */
   @Get('emblematic-figures')
   async getEmblematicFigures() {

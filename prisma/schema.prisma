@@ -11,102 +11,102 @@ datasource db {
 }
 
 model Country {
-  id            Int          @id @default(autoincrement())
-  name          String       @unique
+  id   Int    @id @default(autoincrement())
+  name String @unique
 
-  universities  University[]
-  countryPosts  CountryPost[]
+  universities University[]
+  countryPosts CountryPost[]
 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model University {
-  id          Int        @id @default(autoincrement())
-  name        String
+  id   Int    @id @default(autoincrement())
+  name String
 
-  countryId   Int
-  country     Country    @relation(fields: [countryId], references: [id])
+  countryId Int
+  country   Country @relation(fields: [countryId], references: [id])
 
-  branches    Branch[]
+  branches Branch[]
 
   // Gouvernance & finances (Community OS)
-  posts               UniversityPost[]
-  treasuryAccount     TreasuryAccount?
+  posts                UniversityPost[]
+  treasuryAccount      TreasuryAccount?
   treasuryTransactions TreasuryTransaction[]
-  supportOffers       SupportOffer[]
-  socialAccounts      SocialAccount[]
-  censuses            MembershipCensus[]
-  events              Event[]
-  hackathons          Hackathon[]
-  activityReports     ActivityReport[]
+  supportOffers        SupportOffer[]
+  socialAccounts       SocialAccount[]
+  censuses             MembershipCensus[]
+  events               Event[]
+  hackathons           Hackathon[]
+  activityReports      ActivityReport[]
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([name, countryId])
 }
 
 model Branch {
-  id            Int          @id @default(autoincrement())
-  name          String
+  id   Int    @id @default(autoincrement())
+  name String
 
-  universityId  Int
-  university    University   @relation(fields: [universityId], references: [id])
+  universityId Int
+  university   University @relation(fields: [universityId], references: [id])
 
-  members       Member[]
+  members Member[]
 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Member {
-  id           Int          @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  firstname    String
-  lastname     String
+  firstname String
+  lastname  String
 
-  email        String       @unique
-  password     String
+  email    String @unique
+  password String
 
-  isActive     Boolean      @default(true)
+  isActive Boolean @default(true)
 
-  branchId     Int
-  branch       Branch       @relation(fields: [branchId], references: [id])
+  branchId Int
+  branch   Branch @relation(fields: [branchId], references: [id])
 
   // Nouveaux champs pour le profil Chercheur
-  role         String       @default("ETUDIANT") // ETUDIANT, CHERCHEUR, CHEF_DE_PROJET, MENTOR, RESPONSABLE, ADMIN
+  role         String   @default("ETUDIANT") // ETUDIANT, CHERCHEUR, CHEF_DE_PROJET, MENTOR, RESPONSABLE, ADMIN
   bio          String?
-  skills       String[]     @default([])
+  skills       String[] @default([])
   avatarUrl    String?
-  distinctions String[]     @default([])
+  distinctions String[] @default([])
 
   // Gouvernance : membre emblématique & flux d'exclusion contrôlée
-  isEmblematic        Boolean  @default(false)
-  deletionRequested   Boolean  @default(false)
+  isEmblematic        Boolean @default(false)
+  deletionRequested   Boolean @default(false)
   deletionReason      String?
-  deletionRequestedBy Int?     // ID du membre initiateur (ex: responsable club)
+  deletionRequestedBy Int? // ID du membre initiateur (ex: responsable club)
 
   // Signature manuscrite détourée (PNG) — Chef Universitaire, pour les attestations
-  signatureUrl        String?
+  signatureUrl String?
 
   // Relations
-  starredProjects     ProjectFollow[]
-  contributions       ProjectContribution[]
-  clubMemberships     ClubMembership[]
+  starredProjects       ProjectFollow[]
+  contributions         ProjectContribution[]
+  clubMemberships       ClubMembership[]
   workshopRegistrations WorkshopRegistration[]
-  eventRegistrations   EventRegistration[]
-  authoredNews        News[]
-  notifications       Notification[]
-  badges              Badge[]
-  applications        Application[]
-  followers           ResearcherFollow[] @relation("following")
-  following           ResearcherFollow[] @relation("follower")
-  opportunities       Opportunity[]
-  projects            Project[]          @relation("ProjectOwner")
-  authoredPublications Publication[]
-  donations           Contribution[]
-  responsibleOfClubs  Club[]             @relation("ClubResponsible")
+  eventRegistrations    EventRegistration[]
+  authoredNews          News[]
+  notifications         Notification[]
+  badges                Badge[]
+  applications          Application[]
+  followers             ResearcherFollow[]     @relation("following")
+  following             ResearcherFollow[]     @relation("follower")
+  opportunities         Opportunity[]
+  projects              Project[]              @relation("ProjectOwner")
+  authoredPublications  Publication[]
+  donations             Contribution[]
+  responsibleOfClubs    Club[]                 @relation("ClubResponsible")
 
   // Gouvernance & attestations (Community OS)
   countryPost          CountryPost?
@@ -117,100 +117,107 @@ model Member {
   supportOffers        SupportOffer[]
 
   // Espace club (Cité) : activités assignées & recensements
-  assignedActivities   AssignedActivity[]
-  submittedCensuses    MembershipCensus[]    @relation("CensusSubmitter")
-  validatedCensuses    MembershipCensus[]    @relation("CensusValidator")
-  organizedEvents      Event[]               @relation("EventOrganizer")
+  assignedActivities AssignedActivity[]
+  submittedCensuses  MembershipCensus[] @relation("CensusSubmitter")
+  validatedCensuses  MembershipCensus[] @relation("CensusValidator")
+  organizedEvents    Event[]            @relation("EventOrganizer")
 
   // Challenges & hackathons (Module 3)
+  newsletterSubscription NewsletterSubscriber?
+
   createdChallenges    Challenge[]           @relation("ChallengeCreator")
   challengeSubmissions ChallengeSubmission[]
   createdHackathons    Hackathon[]           @relation("HackathonCreator")
   activityReports      ActivityReport[]      @relation("ReportAuthor")
 
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Project {
-  id           String       @id // e.g., "proj-101"
+  id           String   @id // e.g., "proj-101"
   title        String
   summary      String
   description  String?
-  status       String       @default("Actif") // Actif, Terminé, etc.
-  stars        Int          @default(0)
-  budgetRaised Int          @default(0)
-  technologies String[]     @default([])
-  team         Json         @default("[]") // [{ name, role }]
+  status       String   @default("Actif") // Actif, Terminé, etc.
+  stars        Int      @default(0)
+  budgetRaised Int      @default(0)
+  technologies String[] @default([])
+  team         Json     @default("[]") // [{ name, role }]
 
-  clubId       String?
-  club         Club?        @relation(fields: [clubId], references: [id])
+  clubId String?
+  club   Club?   @relation(fields: [clubId], references: [id])
 
-  ownerId      Int?
-  owner        Member?      @relation("ProjectOwner", fields: [ownerId], references: [id])
+  ownerId Int?
+  owner   Member? @relation("ProjectOwner", fields: [ownerId], references: [id])
 
-  followers    ProjectFollow[]
+  followers     ProjectFollow[]
   contributions ProjectContribution[]
-  tasks        Task[]
-  publications Publication[]
+  tasks         Task[]
+  publications  Publication[]
 
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ProjectFollow {
-  memberId     Int
-  member       Member       @relation(fields: [memberId], references: [id])
-  projectId    String
-  project      Project      @relation(fields: [projectId], references: [id])
+  memberId  Int
+  member    Member  @relation(fields: [memberId], references: [id])
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id])
 
   @@id([memberId, projectId])
 }
 
 model ProjectContribution {
-  id           String       @id @default(uuid())
-  projectId    String
-  project      Project      @relation(fields: [projectId], references: [id])
-  memberId     Int
-  member       Member       @relation(fields: [memberId], references: [id])
-  amount       Int
-  message      String?
-  createdAt    DateTime     @default(now())
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id])
+  memberId  Int
+  member    Member   @relation(fields: [memberId], references: [id])
+  amount    Int
+  message   String?
+  createdAt DateTime @default(now())
 }
 
 model Club {
-  id           String       @id // e.g., "club-1"
-  name         String
-  discipline   String
-  description  String?
+  id          String  @id // e.g., "club-1"
+  name        String
+  discipline  String
+  description String?
 
   // Responsable du pôle (chef de club). Nullable : un club peut ne pas encore
   // avoir de responsable. L'autorisation de gestion (adhésions, édition du club)
   // est scopée à ce membre — ou à un ADMIN.
   responsibleId Int?
-  responsible   Member?      @relation("ClubResponsible", fields: [responsibleId], references: [id])
+  responsible   Member? @relation("ClubResponsible", fields: [responsibleId], references: [id])
 
-  memberships  ClubMembership[]
-  projects     Project[]
-  publications Publication[]
+  memberships        ClubMembership[]
+  projects           Project[]
+  publications       Publication[]
   assignedActivities AssignedActivity[]
-  censuses     MembershipCensus[]
-  events       Event[]
-  challenges   Challenge[]
-  hackathons   Hackathon[]
-  activityReports ActivityReport[]
+  censuses           MembershipCensus[]
+  events             Event[]
+  challenges         Challenge[]
+  hackathons         Hackathon[]
+  activityReports    ActivityReport[]
 
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ClubMembership {
-  id           String       @id @default(uuid())
-  clubId       String
-  club         Club         @relation(fields: [clubId], references: [id])
-  memberId     Int
-  member       Member       @relation(fields: [memberId], references: [id])
-  status       String       @default("PENDING") // PENDING, APPROVED, REJECTED
+  id       String @id @default(uuid())
+  clubId   String
+  club     Club   @relation(fields: [clubId], references: [id])
+  memberId Int
+  member   Member @relation(fields: [memberId], references: [id])
+  status   String @default("PENDING") // PENDING, APPROVED, REJECTED
+
+  /// Ce que la personne dit en demandant a rejoindre le club, et comment la
+  /// joindre. Sans eux, le responsable ne decidait que sur un nom.
+  motivation      String?
+  contact         String?
 
   // Espace club : rôle interne, entretien d'admission, carte de membre
   role            String    @default("MEMBRE") // "MEMBRE" | "RESPONSABLE"
@@ -218,155 +225,161 @@ model ClubMembership {
   interviewNote   String?
   cardGeneratedAt DateTime?
 
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([clubId, memberId])
 }
 
 model Workshop {
-  id              String       @id // e.g., "work-101"
-  title           String
-  instructor      String
-  capacity        Int
-  registrations   WorkshopRegistration[]
+  id            String                 @id // e.g., "work-101"
+  title         String
+  instructor    String
+  capacity      Int
+  registrations WorkshopRegistration[]
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model WorkshopRegistration {
-  id              String       @id @default(uuid())
-  workshopId      String
-  workshop        Workshop     @relation(fields: [workshopId], references: [id])
-  memberId        Int
-  member          Member       @relation(fields: [memberId], references: [id])
-  userFullName    String
-  status          String       @default("REGISTERED") // REGISTERED, WAITLISTED
+  id           String   @id @default(uuid())
+  workshopId   String
+  workshop     Workshop @relation(fields: [workshopId], references: [id])
+  memberId     Int
+  member       Member   @relation(fields: [memberId], references: [id])
+  userFullName String
+  status       String   @default("REGISTERED") // REGISTERED, WAITLISTED
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([workshopId, memberId])
 }
 
 model Event {
-  id              String       @id // e.g., "event-101"
-  title           String
-  date            DateTime
-  isLive          Boolean      @default(false)
-  streamUrl       String
+  id        String   @id // e.g., "event-101"
+  title     String
+  date      DateTime
+  isLive    Boolean  @default(false)
+  streamUrl String
 
   // Extensions communautaires (Module 2)
-  description     String       @default("")
-  endDate         DateTime?
-  isPublished     Boolean      @default(false)
-  socialShared    Boolean      @default(false)
+  description  String    @default("")
+  endDate      DateTime?
+  isPublished  Boolean   @default(false)
+  socialShared Boolean   @default(false)
 
-  clubId          String?
-  club            Club?        @relation(fields: [clubId], references: [id])
-  universityId    Int?
-  university      University?  @relation(fields: [universityId], references: [id])
-  organizerId     Int?
-  organizer       Member?      @relation("EventOrganizer", fields: [organizerId], references: [id])
+  clubId       String?
+  club         Club?       @relation(fields: [clubId], references: [id])
+  universityId Int?
+  university   University? @relation(fields: [universityId], references: [id])
+  organizerId  Int?
+  organizer    Member?     @relation("EventOrganizer", fields: [organizerId], references: [id])
 
-  registrations   EventRegistration[]
+  registrations EventRegistration[]
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model EventRegistration {
-  id              String       @id @default(uuid())
-  eventId         String
-  event           Event        @relation(fields: [eventId], references: [id])
-  memberId        Int
-  member          Member       @relation(fields: [memberId], references: [id])
+  id       String @id @default(uuid())
+  eventId  String
+  event    Event  @relation(fields: [eventId], references: [id])
+  memberId Int
+  member   Member @relation(fields: [memberId], references: [id])
 
   // Présence effective renseignée par l'organisateur en fin d'événement
-  attended        Boolean      @default(false)
+  attended Boolean @default(false)
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([eventId, memberId])
 }
 
 model News {
-  id              String       @id @default(uuid()) // e.g., "news-101"
-  title           String
-  content         String
-  category        String
-  status          String       @default("PENDING") // PENDING, APPROVED, REJECTED
+  id       String  @id @default(uuid()) // e.g., "news-101"
+  title    String
+  content  String
+  category String
+  /// Synthese courte affichee sur la carte. Le formulaire l'envoyait depuis le
+  /// debut ; sans colonne pour l'accueillir, elle etait jetee a chaque depot.
+  excerpt  String?
+  /// Illustration de l'article. Meme histoire : le champ existait a l'ecran,
+  /// pas en base. Contient l'URL renvoyee par POST /uploads/image.
+  imageUrl String?
+  status   String  @default("PENDING") // PENDING, APPROVED, REJECTED
 
-  authorId        Int
-  author          Member       @relation(fields: [authorId], references: [id])
+  authorId Int
+  author   Member @relation(fields: [authorId], references: [id])
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {
-  id              String       @id @default(uuid())
-  memberId        Int
-  member          Member       @relation(fields: [memberId], references: [id])
-  title           String
-  message         String
-  read            Boolean      @default(false)
-  
-  createdAt       DateTime     @default(now())
+  id       String  @id @default(uuid())
+  memberId Int
+  member   Member  @relation(fields: [memberId], references: [id])
+  title    String
+  message  String
+  read     Boolean @default(false)
+
+  createdAt DateTime @default(now())
 }
 
 model ContactMessage {
-  id              String       @id @default(uuid())
-  name            String
-  email           String
-  subject         String
-  message         String
+  id      String @id @default(uuid())
+  name    String
+  email   String
+  subject String
+  message String
 
-  createdAt       DateTime     @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Task {
-  id              String       @id @default(uuid()) // e.g., "task-101"
-  projectId       String
-  project         Project      @relation(fields: [projectId], references: [id])
-  title           String
-  status          String       @default("TODO") // TODO, IN_PROGRESS, DONE
-  priority        String       @default("MEDIUM") // LOW, MEDIUM, HIGH
-  assignedTo      String?
+  id         String  @id @default(uuid()) // e.g., "task-101"
+  projectId  String
+  project    Project @relation(fields: [projectId], references: [id])
+  title      String
+  status     String  @default("TODO") // TODO, IN_PROGRESS, DONE
+  priority   String  @default("MEDIUM") // LOW, MEDIUM, HIGH
+  assignedTo String?
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Badge {
-  id              String       @id @default(uuid())
-  userId          Int
-  user            Member       @relation(fields: [userId], references: [id])
-  badgeType       String       // e.g., CONTRIBUTOR_GOLD
-  userName        String
-  awardedBy       String
+  id        String @id @default(uuid())
+  userId    Int
+  user      Member @relation(fields: [userId], references: [id])
+  badgeType String // e.g., CONTRIBUTOR_GOLD
+  userName  String
+  awardedBy String
 
-  createdAt       DateTime     @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Opportunity {
-  id           String        @id @default(uuid())
-  title        String
-  description  String
-  type         String        // Doctorat, R&D, Stage, etc.
-  discipline   String        // IA, Robotique, etc.
-  salary       Int?          // Salaire/Gratification
-  status       String        @default("Active") // Active, Closed
+  id          String @id @default(uuid())
+  title       String
+  description String
+  type        String // Doctorat, R&D, Stage, etc.
+  discipline  String // IA, Robotique, etc.
+  salary      Int? // Salaire/Gratification
+  status      String @default("Active") // Active, Closed
 
-  authorId     Int
-  author       Member        @relation(fields: [authorId], references: [id])
+  authorId Int
+  author   Member @relation(fields: [authorId], references: [id])
 
   applications Application[]
 
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([discipline])
   @@index([status])
@@ -374,38 +387,38 @@ model Opportunity {
 }
 
 model Application {
-  id              String       @id @default(uuid())
-  opportunityId   String
-  opportunity     Opportunity  @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  memberId        Int
-  member          Member       @relation(fields: [memberId], references: [id])
-  coverLetter     String
-  cvUrl           String
-  status          String       @default("PENDING") // PENDING, APPROVED, REJECTED
+  id            String      @id @default(uuid())
+  opportunityId String
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  memberId      Int
+  member        Member      @relation(fields: [memberId], references: [id])
+  coverLetter   String
+  cvUrl         String
+  status        String      @default("PENDING") // PENDING, APPROVED, REJECTED
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([opportunityId, memberId])
 }
 
 model Publication {
-  id           String       @id @default(uuid())
-  title        String
-  content      String
-  category     String
-  status       String       @default("PUBLISHED") // PUBLISHED, DRAFT, ARCHIVED
+  id       String @id @default(uuid())
+  title    String
+  content  String
+  category String
+  status   String @default("PUBLISHED") // PUBLISHED, DRAFT, ARCHIVED
 
-  authorId     Int
-  author       Member       @relation(fields: [authorId], references: [id])
+  authorId Int
+  author   Member @relation(fields: [authorId], references: [id])
 
-  projectId    String?
-  project      Project?     @relation(fields: [projectId], references: [id])
-  clubId       String?
-  club         Club?        @relation(fields: [clubId], references: [id])
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  clubId    String?
+  club      Club?    @relation(fields: [clubId], references: [id])
 
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([authorId])
   @@index([category])
@@ -415,17 +428,17 @@ model Publication {
 }
 
 model Contribution {
-  id           String       @id @default(uuid())
-  type         String       // "donation" ou "partnership"
-  amount       Int?         // Montant (pour les dons)
-  organisation String?      // Organisation (pour les partenariats)
+  id           String  @id @default(uuid())
+  type         String // "donation" ou "partnership"
+  amount       Int? // Montant (pour les dons)
+  organisation String? // Organisation (pour les partenariats)
   email        String
   message      String?
 
-  memberId     Int?
-  member       Member?      @relation(fields: [memberId], references: [id])
+  memberId Int?
+  member   Member? @relation(fields: [memberId], references: [id])
 
-  createdAt    DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   // Index créés directement en SQL dans les migrations : déclarés ici pour que
   // `prisma migrate dev` ne propose plus de les supprimer.
@@ -434,10 +447,10 @@ model Contribution {
 }
 
 model ResearcherFollow {
-  followerId   Int
-  follower     Member       @relation("follower", fields: [followerId], references: [id])
-  followingId  Int
-  following    Member       @relation("following", fields: [followingId], references: [id])
+  followerId  Int
+  follower    Member @relation("follower", fields: [followerId], references: [id])
+  followingId Int
+  following   Member @relation("following", fields: [followingId], references: [id])
 
   @@id([followerId, followingId])
 }
@@ -447,12 +460,12 @@ model ResearcherFollow {
 // ─────────────────────────────────────────────────────────────
 
 model CountryPost {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   countryId Int
-  country   Country  @relation(fields: [countryId], references: [id])
-  memberId  Int      @unique
-  member    Member   @relation(fields: [memberId], references: [id])
-  post      String   // "GOUVERNANT_PAYS"
+  country   Country @relation(fields: [countryId], references: [id])
+  memberId  Int     @unique
+  member    Member  @relation(fields: [memberId], references: [id])
+  post      String // "GOUVERNANT_PAYS"
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -464,10 +477,10 @@ model UniversityPost {
   university   University @relation(fields: [universityId], references: [id])
   memberId     Int        @unique
   member       Member     @relation(fields: [memberId], references: [id])
-  post         String     // "CHEF_UNIVERSITAIRE" | "SECRETAIRE" | "TRESORIER" | "RESP_COMMUNICATION"
+  post         String // "CHEF_UNIVERSITAIRE" | "SECRETAIRE" | "TRESORIER" | "RESP_COMMUNICATION"
 
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -475,16 +488,16 @@ model UniversityPost {
 // ─────────────────────────────────────────────────────────────
 
 model Certificate {
-  id          String   @id @default(uuid())
+  id          String @id @default(uuid())
   recipientId Int
-  recipient   Member   @relation("CertificateRecipient", fields: [recipientId], references: [id])
+  recipient   Member @relation("CertificateRecipient", fields: [recipientId], references: [id])
   issuerId    Int
-  issuer      Member   @relation("CertificateIssuer", fields: [issuerId], references: [id])
+  issuer      Member @relation("CertificateIssuer", fields: [issuerId], references: [id])
   title       String
-  category    String   // "FORMATION" | "MANDAT" | "PROJET"
-  fileUrl     String   // Lien vers le PDF généré
+  category    String // "FORMATION" | "MANDAT" | "PROJET"
+  fileUrl     String // Lien vers le PDF généré
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -494,52 +507,52 @@ model Certificate {
 model TreasuryAccount {
   id           String     @id @default(uuid())
   universityId Int        @unique
-  university   University  @relation(fields: [universityId], references: [id])
+  university   University @relation(fields: [universityId], references: [id])
   balance      Int        @default(0) // Montant en monnaie locale (ex: FCFA)
 
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model TreasuryTransaction {
   id           String     @id @default(uuid())
   universityId Int
-  university   University  @relation(fields: [universityId], references: [id])
-  type         String     // "COTISATION" | "DON" | "SUBVENTION" | "DEPENSE"
-  amount       Int        // Positif pour les recettes, négatif pour les dépenses
+  university   University @relation(fields: [universityId], references: [id])
+  type         String // "COTISATION" | "DON" | "SUBVENTION" | "DEPENSE"
+  amount       Int // Positif pour les recettes, négatif pour les dépenses
   label        String
   // Nullable : les dons encaissés via webwook (passerelle de paiement) ne sont
   // enregistrés par aucun membre humain.
   recordedById Int?
   recordedBy   Member?    @relation("TransactionRecorder", fields: [recordedById], references: [id])
 
-  createdAt    DateTime   @default(now())
+  createdAt DateTime @default(now())
 }
 
 model SupportOffer {
-  id                String   @id @default(uuid())
+  id                String  @id @default(uuid())
   donorName         String
   donorEmail        String
-  type              String   // "FINANCIAL" | "PHYSICAL"
-  financialPlatform String?  // ex: "GENIUS_PAY"
-  physicalType      String?  // "MATERIEL" | "LOCAUX" | "LOGISTIQUE" | "AUTRE"
-  amount            Int?     // Si financier
+  type              String // "FINANCIAL" | "PHYSICAL"
+  financialPlatform String? // ex: "GENIUS_PAY"
+  physicalType      String? // "MATERIEL" | "LOCAUX" | "LOGISTIQUE" | "AUTRE"
+  amount            Int? // Si financier
   description       String
-  signatureDocUrl   String?  // Document de reçu signé (PDF stocké)
-  fingerprintHash   String?  // Hash sécurisé de validation de l'empreinte/signature
-  status            String   @default("PENDING") // "PENDING" | "VALIDATED" | "REJECTED"
+  signatureDocUrl   String? // Document de reçu signé (PDF stocké)
+  fingerprintHash   String? // Hash sécurisé de validation de l'empreinte/signature
+  status            String  @default("PENDING") // "PENDING" | "VALIDATED" | "REJECTED"
 
   // Université bénéficiaire (crédit de la trésorerie) & initiateur éventuel
-  universityId      Int?
-  university        University? @relation(fields: [universityId], references: [id])
-  memberId          Int?
-  member            Member?     @relation(fields: [memberId], references: [id])
+  universityId Int?
+  university   University? @relation(fields: [universityId], references: [id])
+  memberId     Int?
+  member       Member?     @relation(fields: [memberId], references: [id])
 
   // Référence de session du processeur de paiement (idempotence du webhook)
-  paymentReference  String?  @unique
+  paymentReference String? @unique
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -549,14 +562,14 @@ model SupportOffer {
 model SocialAccount {
   id           String     @id @default(uuid())
   universityId Int
-  university   University  @relation(fields: [universityId], references: [id])
-  platform     String     // "YOUTUBE" | "LINKEDIN" | "META"
-  accessToken  String     // Chiffré (AES-256-GCM)
-  refreshToken String?    // Chiffré (AES-256-GCM)
+  university   University @relation(fields: [universityId], references: [id])
+  platform     String // "YOUTUBE" | "LINKEDIN" | "META"
+  accessToken  String // Chiffré (AES-256-GCM)
+  refreshToken String? // Chiffré (AES-256-GCM)
   expiresAt    DateTime?
 
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([universityId, platform])
 }
@@ -576,8 +589,8 @@ model AssignedActivity {
   status      String    @default("TODO") // "TODO" | "IN_PROGRESS" | "DONE"
   dueDate     DateTime?
 
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model MembershipCensus {
@@ -585,7 +598,7 @@ model MembershipCensus {
   clubId        String
   club          Club       @relation(fields: [clubId], references: [id])
   universityId  Int
-  university    University  @relation(fields: [universityId], references: [id])
+  university    University @relation(fields: [universityId], references: [id])
   submittedById Int
   submittedBy   Member     @relation("CensusSubmitter", fields: [submittedById], references: [id])
   memberCount   Int
@@ -596,7 +609,7 @@ model MembershipCensus {
   validatedBy   Member?    @relation("CensusValidator", fields: [validatedById], references: [id])
   validatedAt   DateTime?
 
-  createdAt     DateTime   @default(now())
+  createdAt DateTime @default(now())
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -608,56 +621,56 @@ model Challenge {
   title           String
   description     String
   rules           String
-  rewardBadgeType String?  // type de badge attribué au(x) gagnant(s)
+  rewardBadgeType String? // type de badge attribué au(x) gagnant(s)
   dueDate         DateTime
   status          String   @default("OPEN") // "OPEN" | "CLOSED"
 
-  clubId          String
-  club            Club     @relation(fields: [clubId], references: [id])
-  createdById     Int
-  createdBy       Member   @relation("ChallengeCreator", fields: [createdById], references: [id])
+  clubId      String
+  club        Club   @relation(fields: [clubId], references: [id])
+  createdById Int
+  createdBy   Member @relation("ChallengeCreator", fields: [createdById], references: [id])
 
-  submissions     ChallengeSubmission[]
+  submissions ChallengeSubmission[]
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ChallengeSubmission {
-  id           String    @id @default(uuid())
-  challengeId  String
-  challenge    Challenge @relation(fields: [challengeId], references: [id])
-  memberId     Int
-  member       Member    @relation(fields: [memberId], references: [id])
-  fileUrl      String    // lien vers le rendu (PDF, dépôt GitHub…)
-  grade        Int?      // note attribuée par le jury
-  feedback     String?   // commentaire du jury
-  isWinner     Boolean   @default(false)
+  id          String    @id @default(uuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  memberId    Int
+  member      Member    @relation(fields: [memberId], references: [id])
+  fileUrl     String // lien vers le rendu (PDF, dépôt GitHub…)
+  grade       Int? // note attribuée par le jury
+  feedback    String? // commentaire du jury
+  isWinner    Boolean   @default(false)
 
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([challengeId, memberId])
 }
 
 model Hackathon {
-  id           String     @id @default(uuid())
-  title        String
-  description  String
-  theme        String?
-  startDate    DateTime
-  endDate      DateTime
-  status       String     @default("PLANNED") // "PLANNED" | "ONGOING" | "DONE"
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  theme       String?
+  startDate   DateTime
+  endDate     DateTime
+  status      String   @default("PLANNED") // "PLANNED" | "ONGOING" | "DONE"
 
-  clubId       String     // affecté à un club (Cité)
+  clubId       String // affecté à un club (Cité)
   club         Club       @relation(fields: [clubId], references: [id])
   universityId Int
-  university   University  @relation(fields: [universityId], references: [id])
+  university   University @relation(fields: [universityId], references: [id])
   createdById  Int
   createdBy    Member     @relation("HackathonCreator", fields: [createdById], references: [id])
 
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Rapport mensuel d'activité & de recherche (Responsable de Club -> Secrétaire)
@@ -666,12 +679,37 @@ model ActivityReport {
   clubId       String
   club         Club       @relation(fields: [clubId], references: [id])
   universityId Int
-  university   University  @relation(fields: [universityId], references: [id])
+  university   University @relation(fields: [universityId], references: [id])
   authorId     Int
   author       Member     @relation("ReportAuthor", fields: [authorId], references: [id])
-  period       String     // ex: "2026-07" (mois concerné)
+  period       String // ex: "2026-07" (mois concerné)
   title        String
-  content      String     // narratif des activités et travaux de recherche
+  content      String // narratif des activités et travaux de recherche
 
-  createdAt    DateTime   @default(now())
+  createdAt DateTime @default(now())
+}
+
+/// Abonnes a la lettre d'information.
+///
+/// Le formulaire du pied de page attendait 800 ms puis affichait « Abonnement
+/// valide » sans rien enregistrer nulle part. Les adresses atterrissent ici.
+///
+/// `memberId` est facultatif : on s'abonne sans compte, depuis le site public.
+/// Un desabonnement ne supprime pas la ligne — il la date, pour ne pas
+/// re-solliciter quelqu'un qui est deja parti.
+model NewsletterSubscriber {
+  id     Int    @id @default(autoincrement())
+  email  String @unique
+  /// D'ou vient l'abonnement : footer, inscription, banniere.
+  source String @default("footer")
+
+  memberId Int?    @unique
+  member   Member? @relation(fields: [memberId], references: [id])
+
+  unsubscribedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([unsubscribedAt])
 }

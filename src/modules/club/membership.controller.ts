@@ -31,9 +31,16 @@ export class MembershipController {
   async createRequest(
     @Request() req: AuthenticatedRequest,
     @Body('clubId') clubId: string,
+    @Body('motivation') motivation?: string,
+    @Body('contact') contact?: string,
   ) {
-    // Note: the spec body contains { clubId, user: { id } } but we can safely use the authenticated user's ID
-    return this.clubService.createMembershipRequest(clubId, req.user.id);
+    // L'identite vient du jeton : le `user` que le client envoyait etait
+    // ignore, et le restera. En revanche la motivation et le moyen de contact
+    // sont ecrits par la personne, et le responsable a besoin des deux.
+    return this.clubService.createMembershipRequest(clubId, req.user.id, {
+      motivation,
+      contact,
+    });
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard, ClubManagerGuard)
