@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -11,6 +12,7 @@ import {
   Request,
 } from '@nestjs/common';
 import {
+  IsInt,
   IsOptional,
   IsString,
   MaxLength,
@@ -57,6 +59,11 @@ class UpdateClubDto {
   description?: string;
 }
 
+class SetResponsibleDto {
+  @IsInt()
+  memberId!: number;
+}
+
 @Controller('clubs')
 export class ClubController {
   constructor(private readonly clubService: ClubService) {}
@@ -95,6 +102,21 @@ export class ClubController {
     @Body() data: UpdateClubDto,
   ) {
     return this.clubService.updateClub(id, data);
+  }
+
+  /**
+   * Nomme le responsable d'un club — réservé à l'ADMIN global (retour client).
+   * L'écran de gestion n'offrait que « Retirer » ; il manquait « Nommer
+   * responsable ».
+   */
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
+  @Patch(':id/responsible')
+  async setResponsible(
+    @Param('id') id: string,
+    @Body() body: SetResponsibleDto,
+  ) {
+    return this.clubService.setResponsible(id, body.memberId);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)

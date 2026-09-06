@@ -464,6 +464,46 @@ export class ClubService {
     };
   }
 
+  /**
+   * Nomme le responsable d'un club (action ADMIN global — retour client :
+   * « il devrait y avoir l'option nommer responsable »).
+   *
+   * En plus de poser `responsibleId` (qui porte l'autorité de gestion via
+   * `ClubManagerGuard`), on garantit que le membre est bien un adhérent
+   * APPROUVÉ du club, avec le rôle interne RESPONSABLE — sans quoi il gérerait
+   * un club dont il ne fait pas partie.
+   */
+  async setResponsible(clubId: string, memberId: number) {
+    const [club, member] = await Promise.all([
+      this.prisma.club.findUnique({ where: { id: clubId } }),
+      this.prisma.member.findUnique({ where: { id: memberId } }),
+    ]);
+    if (!club) {
+      throw new NotFoundException('Club non trouvé');
+    }
+    if (!member) {
+      throw new NotFoundException('Membre non trouvé');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.clubMembership.upsert({
+        where: { clubId_memberId: { clubId, memberId } },
+        create: { clubId, memberId, status: 'APPROVED', role: 'RESPONSABLE' },
+        update: { status: 'APPROVED', role: 'RESPONSABLE' },
+      }),
+      this.prisma.club.update({
+        where: { id: clubId },
+        data: { responsibleId: memberId },
+      }),
+    ]);
+
+    return {
+      success: true,
+      message: `${member.firstname} ${member.lastname} est désormais responsable du club.`,
+      data: { clubId, responsibleId: memberId },
+    };
+  }
+
   async deleteClub(id: string) {
     const club = await this.prisma.club.findUnique({
       where: { id },
