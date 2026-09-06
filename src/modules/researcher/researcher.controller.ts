@@ -10,9 +10,32 @@ import {
   Request,
   ParseIntPipe,
 } from '@nestjs/common';
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { ResearcherService } from './researcher.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
+
+class UpdateResearcherProfileDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  bio?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  skills?: string[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  avatarUrl?: string;
+}
 
 @Controller('researchers')
 export class ResearcherController {
@@ -43,7 +66,7 @@ export class ResearcherController {
   @Put('me')
   async updateMyProfile(
     @Request() req: AuthenticatedRequest,
-    @Body() data: { bio?: string; skills?: string[]; avatarUrl?: string },
+    @Body() data: UpdateResearcherProfileDto,
   ) {
     return this.researcherService.updateMyResearcherProfile(req.user.id, data);
   }

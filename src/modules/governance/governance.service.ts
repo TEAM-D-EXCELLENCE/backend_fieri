@@ -4,15 +4,25 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
-export interface RequestDeletionDto {
+export class RequestDeletionDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
   reason?: string;
 }
 
-export interface ConfirmDeletionDto {
-  approve: boolean;
+export class ConfirmDeletionDto {
+  @IsBoolean()
+  approve!: boolean;
 }
 
 @Injectable()

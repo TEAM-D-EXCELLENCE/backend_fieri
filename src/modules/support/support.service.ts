@@ -5,6 +5,16 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import {
+  IsEmail,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { TreasuryService } from '../treasury/treasury.service';
@@ -13,19 +23,57 @@ import { StorageService } from '../../common/storage/storage.service';
 import { MailService } from '../../common/mail/mail.service';
 import { PdfService } from '../../common/pdf/pdf.service';
 
-export interface InitiateFinancialDto {
-  universityId: number;
-  amount: number;
-  donorName: string;
-  donorEmail: string;
+/**
+ * Corps de `POST /support/initiate-financial`. Endpoint public : chaque champ
+ * est validé et borné. La validation métier fine (université existante,
+ * idempotence) reste dans le service ; ceci ne fait que garantir la FORME.
+ */
+export class InitiateFinancialDto {
+  @IsInt()
+  universityId!: number;
+
+  @IsNumber()
+  @IsPositive({ message: 'Le montant du don doit être positif.' })
+  amount!: number;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  donorName!: string;
+
+  @IsEmail({}, { message: 'Adresse e-mail du donateur invalide.' })
+  @MaxLength(254)
+  donorEmail!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
   message?: string;
 }
 
-export interface SubmitPhysicalDto {
-  donorName: string;
-  donorEmail: string;
-  physicalType: string;
-  description: string;
+/** Corps de `POST /support/submit-physical`. Endpoint public. */
+export class SubmitPhysicalDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  donorName!: string;
+
+  @IsEmail({}, { message: 'Adresse e-mail du partenaire invalide.' })
+  @MaxLength(254)
+  donorEmail!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(40)
+  physicalType!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(2000)
+  description!: string;
+
+  @IsOptional()
+  @IsInt()
   universityId?: number;
 }
 

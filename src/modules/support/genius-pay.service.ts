@@ -44,13 +44,11 @@ export class GeniusPayService {
   async createCheckoutSession(
     params: CheckoutSessionParams,
   ): Promise<CheckoutSession> {
-    const isMock =
-      process.env.GENIUS_PAY_MOCK === 'true' ||
-      !this.apiUrl ||
-      !this.apiKey ||
-      this.apiKey === 'mock';
-
-    if (isMock) {
+    // Le mode simulation ne s'active QUE sur demande explicite. Auparavant, une
+    // clé API absente y basculait automatiquement : en production, un simple
+    // oubli de configuration faisait « réussir » des dons jamais encaissés,
+    // sans le moindre signal. On refuse désormais ce glissement silencieux.
+    if (process.env.GENIUS_PAY_MOCK === 'true') {
       const reference = `MOCK_GP_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       const offerId = params.metadata?.supportOfferId ?? '';
       const checkoutUrl = `${params.successUrl}&mock_payment=1&offerId=${offerId}&ref=${reference}`;
@@ -58,6 +56,18 @@ export class GeniusPayService {
         `[MOCK Genius Pay] Session fictive créée pour ${params.amount} FCFA (ref=${reference})`,
       );
       return { checkoutUrl, reference };
+    }
+
+    // Hors simulation, une passerelle non configurée est une panne, pas un
+    // prétexte à simuler : on échoue bruyamment plutôt que d'encaisser du vide.
+    if (!this.apiUrl || !this.apiKey || this.apiKey === 'mock') {
+      this.logger.error(
+        'Passerelle de paiement non configurée (GENIUS_PAY_API_URL/GENIUS_PAY_API_KEY manquants) ' +
+          'et mode simulation désactivé — initiation de paiement refusée.',
+      );
+      throw new InternalServerErrorException(
+        'Le paiement en ligne est momentanément indisponible.',
+      );
     }
 
     let response: Response;

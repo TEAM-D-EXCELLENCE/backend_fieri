@@ -18,7 +18,7 @@ import {
   ClubManagerGuard,
 } from '../../auth/guards';
 import { ClubSpaceService } from './club-space.service';
-import type { CreateActivityDto, SubmitReportDto } from './club-space.service';
+import { CreateActivityDto, SubmitReportDto } from './club-space.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller()

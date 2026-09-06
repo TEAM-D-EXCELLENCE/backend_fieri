@@ -8,10 +8,30 @@ import {
   UseGuards,
   ParseIntPipe,
 } from '@nestjs/common';
+import { IsInt, IsString, MaxLength, MinLength } from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { BadgeService } from './badge.service';
+
+class AwardBadgeDto {
+  @IsInt()
+  userId!: number;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  userName!: string;
+
+  // La liste blanche des types de badge reste vérifiée dans le service.
+  @IsString()
+  @MaxLength(40)
+  badgeType!: string;
+
+  @IsString()
+  @MaxLength(120)
+  awardedBy!: string;
+}
 
 @Controller('badges')
 export class BadgeController {
@@ -26,13 +46,7 @@ export class BadgeController {
   @Roles('MENTOR', 'ADMIN')
   @Post('award')
   async awardBadge(
-    @Body()
-    data: {
-      userId: number;
-      userName: string;
-      badgeType: string;
-      awardedBy: string;
-    },
+    @Body() data: AwardBadgeDto,
   ) {
     return this.badgeService.awardBadge(data);
   }

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ChallengeService } from './challenge.service';
-import type {
+import {
   CreateChallengeDto,
   SubmitDto,
   EvaluateDto,

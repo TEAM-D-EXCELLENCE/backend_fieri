@@ -11,9 +11,17 @@ export class ResearcherService {
   constructor(private prisma: PrismaService) {}
 
   async getResearchers() {
+    // On compte les abonnés côté SQL (`_count`) au lieu de charger toutes les
+    // lignes de `followers` en mémoire uniquement pour en faire `.length`.
     const members = await this.prisma.member.findMany({
-      include: {
-        followers: true,
+      select: {
+        id: true,
+        firstname: true,
+        lastname: true,
+        role: true,
+        bio: true,
+        skills: true,
+        _count: { select: { followers: true } },
       },
     });
 
@@ -24,7 +32,7 @@ export class ResearcherService {
       role: m.role,
       bio: m.bio || '',
       skills: m.skills,
-      followers: m.followers.length,
+      followers: m._count.followers,
     }));
 
     return {
@@ -42,8 +50,21 @@ export class ResearcherService {
       throw new NotFoundException('Chercheur non trouvé');
     }
 
-    // Find project IDs where the member is part of the team
-    const allProjects = await this.prisma.project.findMany();
+    // Projets où le membre figure dans l'équipe. L'appartenance est stockée par
+    // NOM dans le blob JSON `team`, sans relation dédiée : le rapprochement se
+    // fait donc en mémoire. On ne remonte cependant QUE `id` et `team` (au lieu
+    // de toute la ligne : résumé, description, technologies, horodatages…), ce
+    // qui évite de charger les colonnes lourdes de chaque projet à l'affichage
+    // d'un profil.
+    //
+    // Un filtre 100 % SQL (jsonb) est écarté sciemment : le champ `team` est
+    // d'encodage mixte en base (tableau pour la plupart des lignes, chaîne
+    // double-encodée pour d'anciennes), ce que `parseProjectTeam` absorbe mais
+    // qu'un `jsonb_array_elements` brut ferait planter. La vraie mise à
+    // l'échelle passerait par une table de jonction membre↔projet.
+    const allProjects = await this.prisma.project.findMany({
+      select: { id: true, team: true },
+    });
     const researcherName =
       `${member.firstname} ${member.lastname}`.toLowerCase();
 

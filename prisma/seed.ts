@@ -1,9 +1,25 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
 
 if (process.env.NODE_ENV === 'production') {
   console.error('Erreur : le seed contient des identifiants de démonstration et ne doit jamais être exécuté en production.');
+  process.exit(1);
+}
+
+// Garde-fou supplémentaire : le vrai danger n'est pas NODE_ENV mais la cible.
+// Un `prisma db seed` lancé en local, sans NODE_ENV, écrit dans la base pointée
+// par DATABASE_URL — qui peut être la prod (Neon). On refuse toute base distante
+// à moins d'un opt-in explicite `SEED_ALLOW_REMOTE=1`.
+const dbUrl = process.env.DATABASE_URL ?? '';
+const isRemote = /neon\.tech|amazonaws\.com|\.vercel|supabase|render\.com/i.test(dbUrl);
+if (isRemote && process.env.SEED_ALLOW_REMOTE !== '1') {
+  console.error(
+    'Erreur : DATABASE_URL pointe vers une base DISTANTE (probablement la prod).\n' +
+      'Le seed insère des comptes de démonstration à mot de passe connu et détruirait/exposerait la prod.\n' +
+      'Si c’est vraiment voulu sur une base jetable, relance avec SEED_ALLOW_REMOTE=1.',
+  );
   process.exit(1);
 }
 
@@ -83,8 +99,18 @@ async function main() {
     },
   });
 
-  // Mot de passe commun pour les profils de démonstration
-  const passwordHash = await bcrypt.hash('SecurePassword123!', 10);
+  // Mot de passe commun pour les profils de démonstration.
+  // Plus de secret en dur : on lit SEED_PASSWORD, sinon on en génère un
+  // aléatoire, imprimé UNE fois ici. Ainsi aucun mot de passe connu ne peut
+  // finir en base — même si le seed est rejoué par erreur.
+  const seedPassword =
+    process.env.SEED_PASSWORD ?? randomBytes(12).toString('base64url');
+  if (!process.env.SEED_PASSWORD) {
+    console.log(
+      `\n⚠️  Mot de passe de démo généré (à noter maintenant) : ${seedPassword}\n`,
+    );
+  }
+  const passwordHash = await bcrypt.hash(seedPassword, 10);
 
   // 5. Création de l'Admin Unique
   console.log("Création du compte Administrateur unique…");

@@ -4,26 +4,65 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  IsArray,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 
-export interface CreateChallengeDto {
-  title: string;
-  description: string;
-  rules: string;
-  dueDate: string;
+export class CreateChallengeDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(5000)
+  description!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(5000)
+  rules!: string;
+
+  @IsString()
+  @MaxLength(40)
+  dueDate!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
   rewardBadgeType?: string;
 }
 
-export interface SubmitDto {
-  fileUrl: string;
+export class SubmitDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(2000)
+  fileUrl!: string;
 }
 
-export interface EvaluateDto {
+export class EvaluateDto {
+  @IsOptional()
+  @IsNumber()
   grade?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
   feedback?: string;
 }
 
-export interface CloseChallengeDto {
+export class CloseChallengeDto {
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
   winnerMemberIds?: number[];
 }
 

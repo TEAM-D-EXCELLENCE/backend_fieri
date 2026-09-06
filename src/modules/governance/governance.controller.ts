@@ -12,10 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { UniversityPostGuard } from '../../auth/university-post.guard';
 import { UniversityPosts } from '../../auth/university-post.decorator';
 import { GovernanceService } from './governance.service';
-import type {
-  RequestDeletionDto,
-  ConfirmDeletionDto,
-} from './governance.service';
+import { RequestDeletionDto, ConfirmDeletionDto } from './governance.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 import {
   GovernanceOver,

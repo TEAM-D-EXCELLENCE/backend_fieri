@@ -83,6 +83,7 @@ export class MembersService {
     role?: string;
     page: number;
     limit: number;
+    includeEmail?: boolean;
   }) {
     const where: Prisma.MemberWhereInput = {};
 
@@ -121,7 +122,8 @@ export class MembersService {
         id: m.id,
         firstName: m.firstname,
         lastName: m.lastname,
-        email: m.email,
+        // E-mail réservé aux appelants authentifiés (voir le contrôleur).
+        ...(params.includeEmail ? { email: m.email } : {}),
         role: m.role,
         branchId: m.branchId,
         isEmblematic: m.isEmblematic,

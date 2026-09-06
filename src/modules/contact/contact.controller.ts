@@ -1,6 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ContactService } from './contact.service';
+import { ContactMessageDto } from './contact.dto';
 
 @Controller('contact')
 export class ContactController {
@@ -8,15 +9,7 @@ export class ContactController {
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post()
-  async submitMessage(
-    @Body()
-    data: {
-      name: string;
-      email: string;
-      subject: string;
-      message: string;
-    },
-  ) {
+  async submitMessage(@Body() data: ContactMessageDto) {
     return this.contactService.submitContactMessage(data);
   }
 }

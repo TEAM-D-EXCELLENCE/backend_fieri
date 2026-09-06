@@ -12,7 +12,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { UniversityPostGuard } from '../../auth/university-post.guard';
 import { UniversityPosts } from '../../auth/university-post.decorator';
 import { TreasuryService } from './treasury.service';
-import type { RecordTransactionDto } from './treasury.service';
+import { RecordTransactionDto } from './treasury.service';
 import type { AuthenticatedRequest } from '../../auth/authenticated-request';
 
 @Controller('universities')

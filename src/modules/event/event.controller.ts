@@ -10,6 +10,15 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import {
+  IsArray,
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
@@ -20,6 +29,72 @@ import {
   EventPosts,
   EventRegistrantGuard,
 } from '../../auth/guards';
+
+class CreateEventDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsString()
+  @MaxLength(40)
+  date!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isLive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  streamUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  clubId?: string;
+
+  @IsOptional()
+  @IsInt()
+  universityId?: number;
+}
+
+class UpdateEventDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  date?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isLive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  streamUrl?: string;
+}
+
+class MarkAttendanceDto {
+  @IsArray()
+  @IsInt({ each: true })
+  memberIds!: number[];
+}
 
 @Controller('events')
 export class EventController {
@@ -59,17 +134,7 @@ export class EventController {
   @Roles('ADMIN', 'RESPONSABLE')
   @Post()
   async createEvent(
-    @Body()
-    data: {
-      title: string;
-      date: string;
-      endDate?: string;
-      description?: string;
-      isLive?: boolean;
-      streamUrl?: string;
-      clubId?: string;
-      universityId?: number;
-    },
+    @Body() data: CreateEventDto,
     @Request() req: AuthenticatedRequest,
   ) {
     return this.eventService.createEvent(data, req.user.id);
@@ -80,13 +145,7 @@ export class EventController {
   @Put(':id')
   async updateEvent(
     @Param('id') id: string,
-    @Body()
-    data: Partial<{
-      title: string;
-      date: string;
-      isLive: boolean;
-      streamUrl: string;
-    }>,
+    @Body() data: UpdateEventDto,
   ) {
     return this.eventService.updateEvent(id, data);
   }
@@ -132,7 +191,7 @@ export class EventController {
   @Post(':id/mark-attendance')
   async markAttendance(
     @Param('id') id: string,
-    @Body() body: { memberIds: number[] },
+    @Body() body: MarkAttendanceDto,
   ) {
     return this.eventService.markAttendance(id, body.memberIds);
   }

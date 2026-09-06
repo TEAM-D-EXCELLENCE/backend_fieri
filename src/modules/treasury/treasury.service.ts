@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { IsIn, IsNumber, IsString, MaxLength, MinLength } from 'class-validator';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -14,10 +15,19 @@ const TRANSACTION_TYPES = [
 ] as const;
 type TransactionType = (typeof TRANSACTION_TYPES)[number];
 
-export interface RecordTransactionDto {
-  type: TransactionType;
-  amount: number;
-  label: string;
+export class RecordTransactionDto {
+  @IsIn(TRANSACTION_TYPES as unknown as string[], {
+    message: `Type invalide. Valeurs : ${TRANSACTION_TYPES.join(', ')}.`,
+  })
+  type!: TransactionType;
+
+  @IsNumber()
+  amount!: number;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  label!: string;
 }
 
 @Injectable()

@@ -4,20 +4,51 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClubScopeService } from '../../common/club-scope/club-scope.service';
 
-export interface CreateActivityDto {
-  title: string;
+export class CreateActivityDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
   description?: string;
-  memberId: number;
+
+  @IsInt()
+  memberId!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
   dueDate?: string;
 }
 
-export interface SubmitReportDto {
-  period: string;
-  title: string;
-  content: string;
+export class SubmitReportDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(80)
+  period!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  title!: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(10000)
+  content!: string;
 }
 
 const ACTIVITY_STATUSES = ['TODO', 'IN_PROGRESS', 'DONE'];
