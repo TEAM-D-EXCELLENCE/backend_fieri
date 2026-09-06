@@ -97,6 +97,7 @@ model Member {
   workshopRegistrations WorkshopRegistration[]
   eventRegistrations    EventRegistration[]
   authoredNews          News[]
+  newsReactions         NewsReaction[]
   notifications         Notification[]
   badges                Badge[]
   applications          Application[]
@@ -315,8 +316,28 @@ model News {
   authorId Int
   author   Member @relation(fields: [authorId], references: [id])
 
+  reactions NewsReaction[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// Réaction d'un membre à un article du Journal : « J'adore » / « J'aime pas ».
+/// Un membre n'a qu'une réaction par article (contrainte d'unicité) ; la
+/// changer bascule la valeur, la reposer à l'identique la retire.
+model NewsReaction {
+  id       String @id @default(uuid())
+  newsId   String
+  news     News   @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  memberId Int
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  value    String // LIKE | DISLIKE
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([newsId, memberId])
+  @@index([newsId])
 }
 
 model Notification {
