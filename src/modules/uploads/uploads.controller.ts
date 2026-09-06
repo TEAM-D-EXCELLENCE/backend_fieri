@@ -48,4 +48,34 @@ export class UploadsController {
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.send(image.buffer);
   }
+
+  /**
+   * Dépôt d'un document (CV, pièce jointe) par un membre connecté — PDF/DOC/DOCX.
+   * Répond au retour client : « la plateforme ne prend pas en charge les
+   * fichiers joints », le CV n'acceptait qu'un lien.
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  @UseInterceptors(FileInterceptor('document'))
+  @Post('uploads/document')
+  async uploadDocument(@UploadedFile() file: Express.Multer.File) {
+    const data = await this.uploadsService.saveDocument(file);
+    return { success: true, message: 'Document enregistré.', data };
+  }
+
+  /**
+   * Lecture d'un document déposé. Le nom est un UUID non devinable — même
+   * modèle d'accès que les images (un CV joint à une candidature est déjà
+   * visible du chef de projet via son URL).
+   */
+  @Get('files/documents/:name')
+  async readDocument(@Param('name') name: string, @Res() res: Response) {
+    const doc = await this.uploadsService.readDocument(name);
+    if (!doc) {
+      throw new NotFoundException('Document introuvable.');
+    }
+    res.setHeader('Content-Type', doc.contentType);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(doc.buffer);
+  }
 }

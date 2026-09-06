@@ -30,6 +30,23 @@ const MIMES: Record<string, string> = {
 const MAX_BYTES = 3 * 1024 * 1024;
 const SUBDIR = 'images';
 
+// ── Documents (CV, pièces jointes) ──────────────────────────────────────────
+// Le client signalait que la plateforme ne prenait pas les fichiers joints
+// (CV en PDF notamment) : on n'acceptait qu'une URL saisie à la main.
+const DOC_EXTENSIONS: Record<string, string> = {
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+    'docx',
+};
+const DOC_MIMES: Record<string, string> = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+const DOC_MAX_BYTES = 8 * 1024 * 1024; // 8 Mo — un CV illustré passe.
+const DOC_SUBDIR = 'documents';
+
 /**
  * Dépôt d'images — l'illustration d'un article, une photo de profil.
  *
@@ -90,5 +107,49 @@ export class UploadsService {
       return null;
     }
     return { buffer, contentType: MIMES[match[1]] };
+  }
+
+  /** Dépôt d'un document (CV, pièce jointe) — PDF, DOC ou DOCX. */
+  async saveDocument(
+    file?: UploadedImage,
+  ): Promise<{ url: string; name: string }> {
+    if (!file?.buffer || !file.size) {
+      throw new BadRequestException('Aucun document reçu.');
+    }
+    const extension = DOC_EXTENSIONS[file.mimetype ?? ''];
+    if (!extension) {
+      throw new BadRequestException(
+        'Format non accepté. Utilisez un PDF, DOC ou DOCX.',
+      );
+    }
+    if (file.size > DOC_MAX_BYTES) {
+      throw new BadRequestException('Document trop volumineux (8 Mo maximum).');
+    }
+
+    const name = `${randomUUID()}.${extension}`;
+    await this.storage.save(file.buffer, {
+      subdir: DOC_SUBDIR,
+      filename: name,
+    });
+
+    const base = (
+      process.env.PUBLIC_BASE_URL ?? 'http://localhost:3000'
+    ).replace(/\/+$/, '');
+    return { url: `${base}/files/${DOC_SUBDIR}/${name}`, name };
+  }
+
+  /** Relit un document déposé. `null` s'il n'existe pas. */
+  async readDocument(
+    name: string,
+  ): Promise<{ buffer: Buffer; contentType: string } | null> {
+    const match = /^[0-9a-fA-F-]{36}\.(pdf|doc|docx)$/.exec(name);
+    if (!match) {
+      return null;
+    }
+    const buffer = await this.storage.readByKey(`${DOC_SUBDIR}/${name}`);
+    if (!buffer) {
+      return null;
+    }
+    return { buffer, contentType: DOC_MIMES[match[1]] };
   }
 }
