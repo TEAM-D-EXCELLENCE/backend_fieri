@@ -1,5 +1,4 @@
-# FIERI Research — Backend API (NestJS + Prisma)
-
+# FIERI Research — Backend API 
 API backend de la plateforme FIERI : gestion des chercheurs, clubs, projets, publications, événements, gouvernance, trésorerie, contributions et certification. Dépôt git séparé du front (racine du monorepo : `../README.md`).
 
 ## Stack technique
